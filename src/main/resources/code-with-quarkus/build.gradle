@@ -1,0 +1,71 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-arc'
+
+    // Lombok
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+    implementation 'org.projectlombok:lombok:1.18.22'
+
+
+    // database
+    implementation 'io.quarkus:quarkus-jdbc-h2'
+    implementation 'io.quarkus:quarkus-jdbc-postgresql'
+    implementation 'io.quarkus:quarkus-hibernate-orm-panache'
+
+    //Messaging
+    implementation 'io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq'
+    implementation 'io.quarkus:quarkus-smallrye-reactive-messaging'
+
+    // Rest
+    implementation 'io.quarkus:quarkus-resteasy'
+    implementation 'io.quarkus:quarkus-resteasy-jackson'
+    implementation 'io.quarkus:quarkus-resteasy-mutiny'
+
+    // Rest client
+    implementation 'io.quarkus:quarkus-rest-client-reactive'
+    implementation 'io.quarkus:quarkus-rest-client-reactive-jackson'
+
+
+    //Fault Tolerance
+    implementation "io.quarkus:quarkus-smallrye-fault-tolerance"
+
+    // Tracing
+    implementation "io.quarkus:quarkus-smallrye-opentracing"
+    implementation "io.opentracing.contrib:opentracing-jdbc"
+
+    // Container
+    implementation "io.quarkus:quarkus-minikube"
+    implementation "io.quarkus:quarkus-container-image-jib"
+
+    // Test
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured'
+}
+
+group 'org.niels.master.generated'
+version '1.0.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}

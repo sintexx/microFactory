@@ -1,0 +1,61 @@
+{
+  "services":[
+    {
+      "name": "entryService",
+      "interfaces": [
+        {
+          "name": "process",
+          "type": "http",
+          "method": "GET",
+          "in": "none",
+          "out": "list",
+          "logic": [
+            {
+              "type": "serviceCall",
+              "service": "layer2",
+              "method": "process",
+              "failover": "simple"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "layer2",
+      "interfaces": [
+        {
+          "name": "process",
+          "type": "http",
+          "method": "GET",
+          "in": "none",
+          "out": "single",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "database": "db1",
+              "method": "getList"
+            }
+          ]
+        },
+        {
+          "name": "logChange",
+          "type": "amqp",
+          "in": "single",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "database": "db1",
+              "method": "save"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "databaseServers": [
+    {
+      "name": "dbms1",
+      "databases": ["db1", "db2"]
+    }
+  ]
+}
