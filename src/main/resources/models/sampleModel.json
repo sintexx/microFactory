@@ -28,7 +28,7 @@
           "type": "http",
           "method": "GET",
           "in": "none",
-          "out": "single",
+          "out": "list",
           "logic": [
             {
               "type": "databaseAccess",
@@ -45,7 +45,7 @@
             {
               "type": "databaseAccess",
               "database": "db1",
-              "method": "save"
+              "method": "saveSingle"
             }
           ]
         }

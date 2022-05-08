@@ -1,9 +1,6 @@
 package org.niels.master.model.interfaces;
 
 import com.google.gson.*;
-import org.niels.master.model.logic.DatabaseLogic;
-import org.niels.master.model.logic.Logic;
-import org.niels.master.model.logic.ServiceLogic;
 
 import java.lang.reflect.Type;
 

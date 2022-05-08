@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper=true)
-public class DatabaseLogic extends Logic {
-    private String database;
+public class ServiceCall extends Logic {
+    private String service;
     private String method;
+
 }

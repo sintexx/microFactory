@@ -2,12 +2,10 @@ package org.niels.master.serviceGraph;
 
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
-import io.jaegertracing.thriftjava.Dependency;
 import org.niels.master.model.Service;
-import org.niels.master.model.ServiceModelConfig;
 import org.niels.master.model.interfaces.Interface;
 import org.niels.master.model.logic.Logic;
-import org.niels.master.model.logic.ServiceLogic;
+import org.niels.master.model.logic.ServiceCall;
 
 import java.util.HashMap;
 
@@ -24,8 +22,8 @@ public class ServiceGraphCalculator {
 
             for (Interface anInterface : service.getInterfaces()) {
                 for (Logic logic : anInterface.getLogic()) {
-                    if (logic instanceof ServiceLogic serviceLogic) {
-                        g.putEdge(service, serviceModel.getServiceByName().get(serviceLogic.getService()));
+                    if (logic instanceof ServiceCall serviceCall) {
+                        g.putEdge(service, serviceModel.getServiceByName().get(serviceCall.getService()));
                     }
                 }
             }

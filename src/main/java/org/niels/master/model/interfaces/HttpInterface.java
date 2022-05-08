@@ -1,5 +1,6 @@
 package org.niels.master.model.interfaces;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -8,5 +9,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper=true)
 public class HttpInterface extends Interface {
-    private String method;
+    private HttpMethod method;
+
+    public enum HttpMethod {
+        @SerializedName("GET")
+        GET,
+        @SerializedName("POST")
+        POST
+    }
 }
