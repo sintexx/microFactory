@@ -17,4 +17,8 @@ public class HttpInterface extends Interface {
         @SerializedName("POST")
         POST
     }
+
+    public String getClientMethodName() {
+        return this.getMethod().toString().toLowerCase() + this.getName();
+    }
 }

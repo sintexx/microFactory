@@ -1,7 +1,9 @@
 {
   "services":[
     {
-      "name": "entryService",
+      "name": "entryservice",
+      "dbms": "dbms1",
+      "database": "db2",
       "interfaces": [
         {
           "name": "process",
@@ -22,6 +24,8 @@
     },
     {
       "name": "layer2",
+      "dbms": "dbms1",
+      "database": "db1",
       "interfaces": [
         {
           "name": "process",
@@ -32,19 +36,31 @@
           "logic": [
             {
               "type": "databaseAccess",
-              "database": "db1",
               "method": "getList"
             }
           ]
         },
         {
+          "name": "create",
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
           "name": "logChange",
+          "query": "logChanged",
           "type": "amqp",
           "in": "single",
           "logic": [
             {
               "type": "databaseAccess",
-              "database": "db1",
               "method": "saveSingle"
             }
           ]

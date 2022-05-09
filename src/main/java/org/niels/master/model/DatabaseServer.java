@@ -10,4 +10,8 @@ import java.util.List;
 public class DatabaseServer {
     private String name;
     private List<String> databases;
+
+    public static String getKubernetesServiceName(String dbmsName) {
+        return dbmsName + "postgres";
+    }
 }

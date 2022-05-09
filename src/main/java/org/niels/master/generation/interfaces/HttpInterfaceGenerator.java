@@ -4,6 +4,7 @@ import com.squareup.javapoet.*;
 import org.jetbrains.annotations.NotNull;
 import org.niels.master.generation.CodeConstants;
 import org.niels.master.generation.CodeGenUtils;
+import org.niels.master.generation.clients.RestClientGenerator;
 import org.niels.master.generation.logic.InterfaceCodeGenerator;
 import org.niels.master.model.interfaces.HttpInterface;
 
@@ -15,7 +16,25 @@ import java.io.File;
 import static org.niels.master.generation.CodeGenUtils.getHttpVerb;
 
 public class HttpInterfaceGenerator {
-    public static void generateHttpInterface(HttpInterface endpoint, ClassName dataModelClass, File outputFolder) {
+
+    private ClassName dataModelClass;
+
+    private InterfaceCodeGenerator interfaceCodeGenerator;
+
+    private File outputFolder;
+
+
+    public HttpInterfaceGenerator(ClassName dataModelClass, File outputFolder, InterfaceCodeGenerator interfaceCodeGenerator) {
+        this.dataModelClass = dataModelClass;
+        this.outputFolder = outputFolder;
+        this.interfaceCodeGenerator = interfaceCodeGenerator;
+    }
+
+
+
+
+
+    public void generateInterface(HttpInterface endpoint) {
         var resourceClassBuilder = TypeSpec.classBuilder(endpoint.getName())
                 .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                 .addAnnotation(AnnotationSpec.builder(Path.class).addMember("value", "$S", "/" + endpoint.getName()).build());
@@ -29,7 +48,7 @@ public class HttpInterfaceGenerator {
                 .addAnnotation(AnnotationSpec.builder(Consumes.class).addMember("value", "$S", MediaType.APPLICATION_JSON).build())
                 .addException(InterruptedException.class);
 
-        InterfaceCodeGenerator.addLogicToMethod(endpoint, dataModelClass, endpointMethodBuilder);
+        this.interfaceCodeGenerator.addLogicToMethod(endpoint, endpointMethodBuilder, resourceClassBuilder);
 
         resourceClassBuilder.addMethod(endpointMethodBuilder.build());
 

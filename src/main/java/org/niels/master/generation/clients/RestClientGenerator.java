@@ -41,7 +41,7 @@ public class RestClientGenerator {
                         .addMember("baseUri", "$S", "http://" + url + "/" + httpInterface.getName()).build())
                 .addModifiers(Modifier.PUBLIC);
 
-        var endpointMethodBuilder = MethodSpec.methodBuilder(httpInterface.getMethod().toString().toLowerCase() + httpInterface.getName())
+        var endpointMethodBuilder = MethodSpec.methodBuilder(httpInterface.getClientMethodName())
                 .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
 
 

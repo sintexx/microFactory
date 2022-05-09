@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper=true)
 public class DatabaseAccess extends Logic {
-    private String database;
     private DatabaseMethod method;
 
     public enum DatabaseMethod {
