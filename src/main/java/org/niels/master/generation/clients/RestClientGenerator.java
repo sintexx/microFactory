@@ -138,15 +138,10 @@ public class RestClientGenerator {
                 .addCode(returnCode)
                 .returns(returnType).build();
 
-        var logger = FieldSpec.builder(Logger.class, "LOGGER")
-                .addModifiers( Modifier.PRIVATE, Modifier.STATIC)
-                .initializer(CodeBlock.of("Logger.getLogger($L)", httpInterface.getName() + "Service.class")).build();
-
 
         var fallBackClass = TypeSpec.classBuilder(httpInterface.getClientMethodName() + "Fallback")
                 .addMethod(fallBackMethod)
                 .addModifiers(Modifier.PUBLIC)
-                .addField(logger)
                 .addSuperinterface(ParameterizedTypeName.get(ClassName.bestGuess("org.eclipse.microprofile.faulttolerance.FallbackHandler"), returnType))
                 .build();
 

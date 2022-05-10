@@ -18,5 +18,7 @@ public class DatabaseAccess extends Logic {
         GET_LIST,
         @SerializedName("saveSingle")
         SAVE_SINGLE,
+        @SerializedName("saveList")
+        SAVE_LIST,
     }
 }

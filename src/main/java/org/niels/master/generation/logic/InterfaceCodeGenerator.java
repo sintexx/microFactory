@@ -20,7 +20,6 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.niels.master.model.logic.DatabaseAccess.DatabaseMethod.SAVE_SINGLE;
 
 public class InterfaceCodeGenerator {
 
@@ -120,7 +119,21 @@ public class InterfaceCodeGenerator {
 
 
         if (resourceClassBuilder.fieldSpecs.stream().filter(s -> s.name.equals(channelFieldName)).count() == 0) {
-            var channelField = FieldSpec.builder(Emitter.class, channelFieldName)
+
+            TypeName outputType;
+
+            switch (amqpServiceCall.getOut()) {
+                case LIST -> {
+                    outputType = ParameterizedTypeName.get(ClassName.bestGuess("java.util.List"), dataModelClass);
+                }
+                default -> {
+                    outputType= this.dataModelClass;
+                }
+            }
+
+
+            var channelField = FieldSpec.builder(ParameterizedTypeName.get(ClassName.get(Emitter.class), outputType),
+                            channelFieldName)
                     .addAnnotation(AnnotationSpec.builder(Channel.class).addMember("value", "$S", amqpServiceCall.getQuery()).build())
                     .build();
 
@@ -217,6 +230,9 @@ public class InterfaceCodeGenerator {
                 case SAVE_SINGLE -> {
                     codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + ".persist()"));
                 }
+                case SAVE_LIST -> {
+                    codeSteps.add(CodeBlock.of(CodeConstants.listDataVariable + ".stream().forEach(d -> d.persist())"));
+                }
             }
     }
 
@@ -250,7 +266,7 @@ public class InterfaceCodeGenerator {
     private void addTransactionAnnotationOnDbWrite(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
         if (endpoint.getLogic().stream().filter(l -> {
             if (l instanceof DatabaseAccess dbAccess) {
-                if (dbAccess.getMethod().equals(SAVE_SINGLE)) {
+                if (dbAccess.getMethod().equals(DatabaseAccess.DatabaseMethod.SAVE_SINGLE) || dbAccess.getMethod().equals(DatabaseAccess.DatabaseMethod.SAVE_LIST)) {
                     return true;
                 }
             }
