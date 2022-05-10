@@ -25,12 +25,14 @@ public class Main {
 
         var createdServices = model.generateArtifacts();
 
-        for (ServiceRepresentation createdService : createdServices) {
-            createdService.build();
-            createdService.copyKubernetesYaml();
+
+        if (args.length > 0 && args[0].equals("build")) {
+            for (ServiceRepresentation createdService : createdServices) {
+                createdService.build();
+                createdService.copyKubernetesYaml();
+            }
+
+            KubernetesRunner.run(new File("./GeneratedCode").toPath().resolve("kubernetes"));
         }
-
-         KubernetesRunner.run(new File("./GeneratedCode").toPath().resolve("kubernetes"));
-
     }
 }

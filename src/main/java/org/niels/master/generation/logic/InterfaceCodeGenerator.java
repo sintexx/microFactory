@@ -4,6 +4,7 @@ import com.squareup.javapoet.*;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.niels.master.generation.CodeConstants;
 import org.niels.master.generation.clients.RestClientGenerator;
@@ -16,6 +17,7 @@ import org.niels.master.model.logic.HttpServiceCall;
 import org.niels.master.serviceGraph.ServiceModel;
 
 import javax.inject.Inject;
+import javax.lang.model.element.Modifier;
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +57,8 @@ public class InterfaceCodeGenerator {
             }
         }
 
+        endpointMethodBuilder.addStatement(CodeBlock.of("LOGGER.info($S);", "Method "+ endpoint.getName() + "was called"));
+
 
         for (CodeBlock codeBlock : generateStepsForInterfaceLogic(endpoint, resourceClassBuilder)) {
             endpointMethodBuilder.addStatement(codeBlock);
@@ -65,8 +69,6 @@ public class InterfaceCodeGenerator {
         addReturnStatement(endpoint, endpointMethodBuilder);
 
         addOutputParameters(endpoint, endpointMethodBuilder);
-
-        addInputParameters(endpoint, endpointMethodBuilder);
 
         addTransactionAnnotationOnDbWrite(endpoint, endpointMethodBuilder);
     }
@@ -236,18 +238,7 @@ public class InterfaceCodeGenerator {
             }
     }
 
-    private void addInputParameters(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
-        switch (endpoint.getIn()) {
-            case NONE -> {
-            }
-            case SINGLE -> {
-                endpointMethodBuilder.addParameter(dataModelClass, CodeConstants.singleDataVariable);
-            }
-            case LIST -> {
-                endpointMethodBuilder.addParameter(ParameterizedTypeName.get(ClassName.bestGuess("java.util.List"), dataModelClass), CodeConstants.listDataVariable);
-            }
-        }
-    }
+
 
     private void addOutputParameters(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
         switch (endpoint.getOut()) {

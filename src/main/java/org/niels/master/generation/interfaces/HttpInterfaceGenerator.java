@@ -1,12 +1,14 @@
 package org.niels.master.generation.interfaces;
 
 import com.squareup.javapoet.*;
+import org.jboss.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.niels.master.generation.CodeConstants;
 import org.niels.master.generation.CodeGenUtils;
 import org.niels.master.generation.clients.RestClientGenerator;
 import org.niels.master.generation.logic.InterfaceCodeGenerator;
 import org.niels.master.model.interfaces.HttpInterface;
+import org.niels.master.model.interfaces.Interface;
 
 import javax.lang.model.element.Modifier;
 import javax.ws.rs.*;
@@ -48,11 +50,32 @@ public class HttpInterfaceGenerator {
                 .addAnnotation(AnnotationSpec.builder(Consumes.class).addMember("value", "$S", MediaType.APPLICATION_JSON).build())
                 .addException(InterruptedException.class);
 
+        var logger = FieldSpec.builder(Logger.class, "LOGGER")
+                .addModifiers( Modifier.PRIVATE, Modifier.STATIC)
+                .initializer(CodeBlock.of("Logger.getLogger($L)", endpoint.getName() + ".class")).build();
+
+        resourceClassBuilder.addField(logger);
+
+        addInputParameters(endpoint, endpointMethodBuilder);
+
         this.interfaceCodeGenerator.addLogicToMethod(endpoint, endpointMethodBuilder, resourceClassBuilder);
 
         resourceClassBuilder.addMethod(endpointMethodBuilder.build());
 
         CodeGenUtils.writeToJavaFile(outputFolder, resourceClassBuilder.build(), "org.niels.master.generated.http");
+    }
+
+    private void addInputParameters(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
+        switch (endpoint.getIn()) {
+            case NONE -> {
+            }
+            case SINGLE -> {
+                endpointMethodBuilder.addParameter(dataModelClass, CodeConstants.singleDataVariable);
+            }
+            case LIST -> {
+                endpointMethodBuilder.addParameter(ParameterizedTypeName.get(ClassName.bestGuess("java.util.List"), dataModelClass), CodeConstants.listDataVariable);
+            }
+        }
     }
 
 

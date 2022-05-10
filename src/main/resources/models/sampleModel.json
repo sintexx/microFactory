@@ -8,21 +8,15 @@
         {
           "name": "process",
           "type": "http",
-          "method": "GET",
-          "in": "none",
-          "out": "list",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
           "time": 23,
           "logic": [
             {
-              "type": "httpServiceCall",
-              "service": "layer2",
-              "method": "process",
-              "failover": "simple"
-            },
-            {
               "type": "amqpServiceCall",
               "query": "logChanged",
-              "out": "list"
+              "out": "single"
             }
           ]
         }
@@ -34,7 +28,7 @@
       "database": "db1",
       "interfaces": [
         {
-          "name": "process",
+          "name": "getLogs",
           "type": "http",
           "method": "GET",
           "in": "none",
@@ -47,27 +41,14 @@
           ]
         },
         {
-          "name": "create",
-          "type": "http",
-          "method": "POST",
+          "name": "logChange",
+          "query": "logChanged",
+          "type": "amqp",
           "in": "single",
-          "out": "none",
           "logic": [
             {
               "type": "databaseAccess",
               "method": "saveSingle"
-            }
-          ]
-        },
-        {
-          "name": "logChange",
-          "query": "logChanged",
-          "type": "amqp",
-          "in": "list",
-          "logic": [
-            {
-              "type": "databaseAccess",
-              "method": "saveList"
             }
           ]
         }
