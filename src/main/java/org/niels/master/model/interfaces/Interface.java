@@ -12,8 +12,9 @@ import java.util.List;
 public class Interface {
     protected String name;
     protected Type type;
-    protected InputType in;
-    protected OutputType out;
+    protected InputType in = InputType.NONE;
+    protected OutputType out = OutputType.NONE;
+    protected Integer time;
 
     protected List<Logic> logic;
 

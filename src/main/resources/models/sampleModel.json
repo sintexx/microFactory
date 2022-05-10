@@ -11,12 +11,18 @@
           "method": "GET",
           "in": "none",
           "out": "list",
+          "time": 23,
           "logic": [
             {
-              "type": "serviceCall",
+              "type": "httpServiceCall",
               "service": "layer2",
               "method": "process",
               "failover": "simple"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "logChanged",
+              "out": "single"
             }
           ]
         }

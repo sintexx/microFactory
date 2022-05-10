@@ -5,7 +5,7 @@ import com.google.common.graph.MutableGraph;
 import org.niels.master.model.Service;
 import org.niels.master.model.interfaces.Interface;
 import org.niels.master.model.logic.Logic;
-import org.niels.master.model.logic.ServiceCall;
+import org.niels.master.model.logic.HttpServiceCall;
 
 import java.util.HashMap;
 
@@ -22,7 +22,7 @@ public class ServiceGraphCalculator {
 
             for (Interface anInterface : service.getInterfaces()) {
                 for (Logic logic : anInterface.getLogic()) {
-                    if (logic instanceof ServiceCall serviceCall) {
+                    if (logic instanceof HttpServiceCall serviceCall) {
                         g.putEdge(service, serviceModel.getServiceByName().get(serviceCall.getService()));
                     }
                 }

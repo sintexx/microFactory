@@ -11,12 +11,14 @@ import lombok.NoArgsConstructor;
 public class HttpInterface extends Interface {
     private HttpMethod method;
 
+
     public enum HttpMethod {
         @SerializedName("GET")
         GET,
         @SerializedName("POST")
         POST
     }
+
 
     public String getClientMethodName() {
         return this.getMethod().toString().toLowerCase() + this.getName();

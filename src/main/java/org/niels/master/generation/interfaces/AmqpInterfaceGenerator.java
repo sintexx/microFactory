@@ -45,7 +45,6 @@ public class AmqpInterfaceGenerator {
         var endpointMethodBuilder = MethodSpec.methodBuilder("process")
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(Blocking.class)
-                .addParameter(String.class, "incoming")
                 .addAnnotation(AnnotationSpec.builder(Incoming.class)
                         .addMember("value", "$S", endpoint.getQuery()).build())
                 .returns(void.class);
@@ -53,6 +52,8 @@ public class AmqpInterfaceGenerator {
         this.applicationProperties.addLine("mp.messaging.incoming." + endpoint.getQuery() + ".connector=smallrye-rabbitmq");
         this.applicationProperties.addLine("mp.messaging.incoming." + endpoint.getQuery() + ".address="+ endpoint.getQuery());
         this.applicationProperties.addLine("mp.messaging.incoming." + endpoint.getQuery() + ".queue.name="+ endpoint.getQuery());
+
+        this.interfaceCodeGenerator.addLogicToMethod(endpoint, endpointMethodBuilder, processorClassBuilder);
 
 
 

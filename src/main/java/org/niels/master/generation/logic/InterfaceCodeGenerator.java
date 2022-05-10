@@ -1,15 +1,18 @@
 package org.niels.master.generation.logic;
 
 import com.squareup.javapoet.*;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jetbrains.annotations.NotNull;
 import org.niels.master.generation.CodeConstants;
 import org.niels.master.generation.clients.RestClientGenerator;
 import org.niels.master.model.interfaces.HttpInterface;
 import org.niels.master.model.interfaces.Interface;
+import org.niels.master.model.logic.AmqpServiceCall;
 import org.niels.master.model.logic.DatabaseAccess;
 import org.niels.master.model.logic.Logic;
-import org.niels.master.model.logic.ServiceCall;
+import org.niels.master.model.logic.HttpServiceCall;
 import org.niels.master.serviceGraph.ServiceModel;
 
 import javax.inject.Inject;
@@ -33,7 +36,7 @@ public class InterfaceCodeGenerator {
 
     private ServiceModel serviceModel;
 
-    public void addLogicToMethod(HttpInterface endpoint, MethodSpec.Builder endpointMethodBuilder, TypeSpec.Builder resourceClassBuilder) {
+    public void addLogicToMethod(Interface endpoint, MethodSpec.Builder endpointMethodBuilder, TypeSpec.Builder resourceClassBuilder) {
 
         switch (endpoint.getIn()) {
 
@@ -58,6 +61,25 @@ public class InterfaceCodeGenerator {
             endpointMethodBuilder.addStatement(codeBlock);
         }
 
+        checkAndAddAdditionalSleep(endpoint, endpointMethodBuilder);
+
+        addReturnStatement(endpoint, endpointMethodBuilder);
+
+        addOutputParameters(endpoint, endpointMethodBuilder);
+
+        addInputParameters(endpoint, endpointMethodBuilder);
+
+        addTransactionAnnotationOnDbWrite(endpoint, endpointMethodBuilder);
+    }
+
+    private void checkAndAddAdditionalSleep(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
+        if (endpoint.getTime() != null) {
+            endpointMethodBuilder.addStatement(CodeBlock.of("$T.sleep($L)", Thread.class, endpoint.getTime()));
+            endpointMethodBuilder.addException(InterruptedException.class);
+        }
+    }
+
+    private void addReturnStatement(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
         switch (endpoint.getOut()) {
 
             case SINGLE -> {
@@ -68,12 +90,6 @@ public class InterfaceCodeGenerator {
 
             }
         }
-
-        addOutputParameters(endpoint, endpointMethodBuilder);
-
-        addInputParameters(endpoint, endpointMethodBuilder);
-
-        addTransactionAnnotationOnDbWrite(endpoint, endpointMethodBuilder);
     }
 
     private List<CodeBlock> generateStepsForInterfaceLogic(Interface method, TypeSpec.Builder resourceClassBuilder) {
@@ -84,8 +100,14 @@ public class InterfaceCodeGenerator {
                 createDbAccessLogic(codeSteps, dbAccess);
             }
 
-            if (logic instanceof ServiceCall serviceCall) {
+            if (logic instanceof HttpServiceCall serviceCall) {
                 createServiceCallLogic(resourceClassBuilder, codeSteps, serviceCall);
+            }
+
+            if (logic instanceof AmqpServiceCall amqpServiceCall) {
+
+                createAmqpServiceCallLogic(resourceClassBuilder, codeSteps, amqpServiceCall);
+
             }
         }
 
@@ -93,13 +115,55 @@ public class InterfaceCodeGenerator {
         return codeSteps;
     }
 
-    private void createServiceCallLogic(TypeSpec.Builder resourceClassBuilder, ArrayList<CodeBlock> codeSteps, ServiceCall serviceCall) {
+    private void createAmqpServiceCallLogic(TypeSpec.Builder resourceClassBuilder, ArrayList<CodeBlock> codeSteps, AmqpServiceCall amqpServiceCall) {
+        var channelFieldName = amqpServiceCall.getQuery();
+
+
+        if (resourceClassBuilder.fieldSpecs.stream().filter(s -> s.name.equals(channelFieldName)).count() == 0) {
+            var channelField = FieldSpec.builder(Emitter.class, channelFieldName)
+                    .addAnnotation(AnnotationSpec.builder(Channel.class).addMember("value", "$S", amqpServiceCall.getQuery()).build())
+                    .build();
+
+            resourceClassBuilder.addField(channelField);
+        }
+
+        switch (amqpServiceCall.getOut()) {
+
+            case SINGLE -> {
+                codeSteps.add(CodeBlock.of(channelFieldName + ".send(" + CodeConstants.singleDataVariable + ")"));
+
+            }
+            case LIST -> {
+                codeSteps.add(CodeBlock.of(channelFieldName + ".send(" + CodeConstants.listDataVariable + ")"));
+            }
+        }
+    }
+
+    private void createServiceCallLogic(TypeSpec.Builder resourceClassBuilder, ArrayList<CodeBlock> codeSteps, HttpServiceCall serviceCall) {
         var calledService = this.serviceModel.getServiceByName().get(serviceCall.getService());
 
         if (calledService.getInterfaceByName(serviceCall.getMethod()) instanceof HttpInterface calledHttpInterface) {
-            var restClientClass = this.restClientGenerator.generateRestClientIfNotExit(calledService.getName(), calledHttpInterface);
+            var restClientClasses = this.restClientGenerator.generateRestClientIfNotExit(calledService.getName(), calledHttpInterface);
 
             var serviceFieldName = calledService.getName() + calledHttpInterface.getName() + "Client";
+
+
+            ClassName restClientClass;
+            switch (serviceCall.getFallback()) {
+
+                case RETRY -> {
+                    restClientClass = restClientClasses.getRetry();
+
+                }
+                case COMPLEX -> {
+                    restClientClass = restClientClasses.getFailover();
+                }
+
+                default -> {
+                    restClientClass = restClientClasses.getStandard();
+                }
+            }
+
 
             var serviceClientField = FieldSpec.builder(restClientClass, serviceFieldName)
                     .addAnnotation(Inject.class)
@@ -156,7 +220,7 @@ public class InterfaceCodeGenerator {
             }
     }
 
-    private void addInputParameters(HttpInterface endpoint, MethodSpec.Builder endpointMethodBuilder) {
+    private void addInputParameters(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
         switch (endpoint.getIn()) {
             case NONE -> {
             }
@@ -169,7 +233,7 @@ public class InterfaceCodeGenerator {
         }
     }
 
-    private void addOutputParameters(HttpInterface endpoint, MethodSpec.Builder endpointMethodBuilder) {
+    private void addOutputParameters(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
         switch (endpoint.getOut()) {
             case NONE -> {
                 endpointMethodBuilder.returns(void.class);
@@ -183,7 +247,7 @@ public class InterfaceCodeGenerator {
         }
     }
 
-    private void addTransactionAnnotationOnDbWrite(HttpInterface endpoint, MethodSpec.Builder endpointMethodBuilder) {
+    private void addTransactionAnnotationOnDbWrite(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {
         if (endpoint.getLogic().stream().filter(l -> {
             if (l instanceof DatabaseAccess dbAccess) {
                 if (dbAccess.getMethod().equals(SAVE_SINGLE)) {

@@ -12,11 +12,14 @@ public class LogicAdapter implements JsonDeserializer<Logic> {
 
         Class<?> klass = null;
         switch (type) {
-            case "serviceCall":
-                klass = ServiceCall.class;
+            case "httpServiceCall":
+                klass = HttpServiceCall.class;
                 break;
             case "databaseAccess":
                 klass = DatabaseAccess.class;
+                break;
+            case "amqpServiceCall":
+                klass = AmqpServiceCall.class;
                 break;
             default:
                 return null;

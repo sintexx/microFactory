@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.niels.master.model.Service;
 import org.niels.master.model.interfaces.Interface;
 import org.niels.master.model.logic.Logic;
-import org.niels.master.model.logic.ServiceCall;
+import org.niels.master.model.logic.HttpServiceCall;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -64,7 +64,7 @@ public class GraphVisualizer {
 
             for (Interface anInterface : service.getInterfaces()) {
                 for (Logic logic : anInterface.getLogic()) {
-                    if (logic instanceof ServiceCall serviceCall) {
+                    if (logic instanceof HttpServiceCall serviceCall) {
                         var connectedService = allServiceNodes.get(serviceCall.getService());
 
                         currentServiceNode.addLink(between(port(anInterface.getName()),

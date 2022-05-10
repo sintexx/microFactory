@@ -107,7 +107,7 @@ public class MetricWriter {
             var img = drawing.createPicture(imageAnchor, graphImage);
 
             imageSheet.autoSizeColumn(0);
-            img.resize();
+            img.resize(6);
 
         } catch (Exception ex) {
             logger.error("Error adding graph to excel", ex);
