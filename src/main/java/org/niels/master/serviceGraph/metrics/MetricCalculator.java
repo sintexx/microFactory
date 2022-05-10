@@ -1,6 +1,8 @@
 package org.niels.master.serviceGraph.metrics;
 
 import org.niels.master.model.Service;
+import org.niels.master.model.logic.AmqpServiceCall;
+import org.niels.master.model.logic.DatabaseAccess;
 import org.niels.master.model.logic.HttpServiceCall;
 import org.niels.master.serviceGraph.ServiceModel;
 
@@ -28,10 +30,18 @@ public class MetricCalculator {
 
         metrics.put(Metric.CONSUMED_ENDPOINTS, (int)totalConsumedEndpoints);
 
+        var syncServiceDependencies = countDependenciesByType(service, HttpServiceCall.class);
+
+        metrics.put(Metric.SYNC_SERVICE_DEPENDENCIES, syncServiceDependencies);
+
+        var asyncServiceDependencies = countDependenciesByType(service, AmqpServiceCall.class);
+
+        metrics.put(Metric.ASYNC_SERVICE_DEPENDENCIES, asyncServiceDependencies);
+
         metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, calculateMayAffectedServiceChain(service));
 
         var maxDependencies = service.getInterfaces().stream().map(i -> i.getLogic())
-                .map(l -> l.stream().filter(logicStep -> logicStep instanceof HttpServiceCall).count())
+                .map(l -> l.stream().filter(logicStep -> !(logicStep instanceof DatabaseAccess)).count())
                 .mapToLong(Long::longValue).max().getAsLong();
 
         metrics.put(Metric.MAX_AFFECTED_SERVICES_PER_HANDLING, (int)maxDependencies);
@@ -44,6 +54,12 @@ public class MetricCalculator {
         metrics.put(Metric.IS_PART_OF_CYCLE, checkIfPartOfCycle(service));
 
         return metrics;
+    }
+
+    private int countDependenciesByType(Service service, Class<?> type) {
+        return (int)service.getInterfaces().stream().map(i -> i.getLogic())
+                .map(l -> l.stream().filter(logicStep -> type.isInstance(logicStep)).count())
+                .mapToLong(Long::longValue).max().getAsLong();
     }
 
     private int countDependenciesByFailover(Service service, HttpServiceCall.Fallback fallbackType) {

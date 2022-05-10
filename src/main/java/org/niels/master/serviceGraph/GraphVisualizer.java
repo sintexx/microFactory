@@ -10,7 +10,9 @@ import guru.nidi.graphviz.model.MutableNode;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.niels.master.model.Service;
+import org.niels.master.model.interfaces.AmqpInterface;
 import org.niels.master.model.interfaces.Interface;
+import org.niels.master.model.logic.AmqpServiceCall;
 import org.niels.master.model.logic.Logic;
 import org.niels.master.model.logic.HttpServiceCall;
 
@@ -42,6 +44,8 @@ public class GraphVisualizer {
 
         var allServiceNodes = new HashMap<String, MutableNode>();
 
+        var amqpNodes = new HashMap<String, MutableNode>();
+
         for (Service service : serviceModel.getConfig().getServices()) {
             var serviceNode = mutNode(service.getName());
 
@@ -50,6 +54,15 @@ public class GraphVisualizer {
             var ports = new ArrayList<>();
             for (Interface anInterface : service.getInterfaces()) {
                 ports.add(rec(anInterface.getName(), anInterface.getName()));
+
+                if (anInterface instanceof AmqpInterface amqpInterface) {
+                    var queryNode = getOrCreateAmqpQueryNode(amqpNodes, amqpInterface.getQuery(), g);
+
+                    queryNode.addLink(between(port(anInterface.getName()), serviceNode));
+
+                    // serviceNode.addLink(between(port(anInterface.getName()), queryNode));
+                }
+
             }
 
             serviceNode.add(Records.of(ArrayUtils.addAll(new String[]{service.getName() }, ports.toArray(new String[0]))));
@@ -57,6 +70,7 @@ public class GraphVisualizer {
             g.add(serviceNode);
 
         }
+
 
         for (Service service : serviceModel.getConfig().getServices()) {
 
@@ -70,11 +84,34 @@ public class GraphVisualizer {
                         currentServiceNode.addLink(between(port(anInterface.getName()),
                                 connectedService.port(serviceCall.getMethod(), Compass.WEST)));
                     }
+
+                    if (logic instanceof AmqpServiceCall serviceCall) {
+
+                        getOrCreateAmqpQueryNode(amqpNodes, serviceCall.getQuery(), g);
+
+                        currentServiceNode.addLink(serviceCall.getQuery());
+                    }
                 }
             }
         }
 
 
         return g;
+    }
+
+    private static MutableNode getOrCreateAmqpQueryNode(HashMap<String, MutableNode> amqpNodes, String query, MutableGraph g) {
+        MutableNode amqpQueryNode;
+        if (amqpNodes.containsKey(query)) {
+            amqpQueryNode = amqpNodes.get(query);
+        }
+
+        amqpQueryNode = mutNode(query);
+
+
+        g.add(amqpQueryNode);
+
+        amqpNodes.put(query, amqpQueryNode);
+
+        return amqpQueryNode;
     }
 }
