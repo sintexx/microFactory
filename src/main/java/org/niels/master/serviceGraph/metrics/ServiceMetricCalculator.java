@@ -1,5 +1,6 @@
 package org.niels.master.serviceGraph.metrics;
 
+import com.google.common.graph.Graphs;
 import org.niels.master.model.Service;
 import org.niels.master.model.logic.*;
 import org.niels.master.serviceGraph.ServiceModel;
@@ -37,7 +38,16 @@ public class ServiceMetricCalculator {
 
         metrics.put(Metric.ASYNC_SERVICE_DEPENDENCIES, asyncServiceDependencies);
 
-        metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, calculateMayAffectedServiceChain(service));
+        var isPartOfCycle = checkIfPartOfCycle(service);
+        metrics.put(Metric.IS_PART_OF_CYCLE, isPartOfCycle);
+
+        if (isPartOfCycle) {
+            metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, 999999);
+
+        } else {
+            metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, calculateMayAffectedServiceChain(service));
+
+        }
 
         long maxDependencies = getMaxAffectedDependencies(service);
 
@@ -47,8 +57,6 @@ public class ServiceMetricCalculator {
         metrics.put(Metric.DEPENDENCIES_SIMPLE_FAILOVER, countDependenciesByFailover(service, HttpServiceCall.Fallback.RETRY));
 
         metrics.put(Metric.DEPENDENCIES_COMPLEX_FAILOVER, countDependenciesByFailover(service, HttpServiceCall.Fallback.COMPLEX));
-
-        metrics.put(Metric.IS_PART_OF_CYCLE, checkIfPartOfCycle(service));
 
         var ABSOLUT_IMPORTANCE_OF_THE_SERVICE = getAllDependentServices(service.getName()).size();
         metrics.put(Metric.ABSOLUT_IMPORTANCE_OF_THE_SERVICE, ABSOLUT_IMPORTANCE_OF_THE_SERVICE);
@@ -133,14 +141,14 @@ public class ServiceMetricCalculator {
     }
 
     private boolean checkIfPartOfCycle(Service service) {
-        return getAllReachable(service, new HashSet<>()).contains(service);
+        var res = getAllReachable(service, new HashSet<>());
+
+        return res.contains(service);
     }
 
     private Set<Service> getAllReachable(Service service, Set<Service> res) {
-        if (this.serviceModel.getServiceGraph().successors(service).size() == 0) {
-            return res;
-        }
-
+        // Graphs.reachableNodes(this.serviceModel.getServiceGraph(), service)
+        var c = Graphs.hasCycle(this.serviceModel.getServiceGraph());
         for (Service successor : this.serviceModel.getServiceGraph().successors(service)) {
 
             if (res.contains(successor))
@@ -148,7 +156,9 @@ public class ServiceMetricCalculator {
 
             res.add(successor);
 
-            res.addAll(getAllReachable(successor, res));
+            var next = getAllReachable(successor, res);
+
+            res.addAll(next);
         }
 
         return res;

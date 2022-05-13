@@ -1,6 +1,7 @@
 package org.niels.master.model;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.niels.master.model.interfaces.Interface;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode
 public class Service {
     private String name;
 

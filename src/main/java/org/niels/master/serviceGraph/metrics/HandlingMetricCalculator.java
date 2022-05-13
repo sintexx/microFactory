@@ -2,6 +2,7 @@ package org.niels.master.serviceGraph.metrics;
 
 import lombok.AllArgsConstructor;
 import org.niels.master.model.Service;
+import org.niels.master.model.interfaces.Interface;
 import org.niels.master.serviceGraph.ServiceModel;
 
 import java.util.Arrays;
@@ -21,8 +22,15 @@ public class HandlingMetricCalculator {
                 .filter(s -> s.getService().getInterfaces().stream().filter(i -> i.getPartOfHandling().contains(handling)).count() > 0).collect(Collectors.toList());
 
         for (Metric m : Arrays.asList(Metric.values())) {
-            var avg = servicesOfHandling.stream().map(s -> s.getMetrics().get(m)).filter(metric -> metric instanceof Integer)
-                    .map(metric -> ((Integer)metric).doubleValue()).mapToDouble(Double::doubleValue).average();
+            var avg = servicesOfHandling.stream().map(s -> s.getMetrics().get(m)).filter(metric -> {
+                        return metric instanceof Integer || metric instanceof Double;
+                    })
+                    .map(metric -> {
+                        if (metric instanceof Integer mI) {
+                            return mI.doubleValue();
+                        }
+                        return (double)metric;
+                    }).mapToDouble(Double::doubleValue).average();
 
             if (avg.isPresent()) {
                 metrics.put(m, avg.getAsDouble());
