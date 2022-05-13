@@ -17,6 +17,7 @@ import org.niels.master.model.logic.Logic;
 import org.niels.master.model.logic.HttpServiceCall;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +35,14 @@ public class GraphVisualizer {
         Graphviz.fromGraph(g).render(Format.PNG).toOutputStream(st);
 
         return st.toByteArray();
+    }
+
+    public static void writeGraphAsSvg(ServiceModel serviceModel, File out) throws IOException {
+
+        MutableGraph g = createGraph(serviceModel);
+
+        var st = new ByteArrayOutputStream();
+        Graphviz.fromGraph(g).render(Format.SVG).toFile(out);
     }
 
     @NotNull
@@ -82,14 +91,18 @@ public class GraphVisualizer {
                         var connectedService = allServiceNodes.get(serviceCall.getService());
 
                         currentServiceNode.addLink(between(port(anInterface.getName()),
-                                connectedService.port(serviceCall.getMethod(), Compass.WEST)));
+                                connectedService.port(serviceCall.getEndpoint(), Compass.WEST)));
                     }
 
                     if (logic instanceof AmqpServiceCall serviceCall) {
 
-                        getOrCreateAmqpQueryNode(amqpNodes, serviceCall.getQuery(), g);
+                        var amqpNode = getOrCreateAmqpQueryNode(amqpNodes, serviceCall.getQuery(), g);
 
-                        currentServiceNode.addLink(serviceCall.getQuery());
+
+                        currentServiceNode.addLink(between(port(anInterface.getName()), amqpNode));
+
+
+                        // currentServiceNode.addLink(serviceCall.getQuery());
                     }
                 }
             }
@@ -100,13 +113,11 @@ public class GraphVisualizer {
     }
 
     private static MutableNode getOrCreateAmqpQueryNode(HashMap<String, MutableNode> amqpNodes, String query, MutableGraph g) {
-        MutableNode amqpQueryNode;
         if (amqpNodes.containsKey(query)) {
-            amqpQueryNode = amqpNodes.get(query);
+            return amqpNodes.get(query);
         }
 
-        amqpQueryNode = mutNode(query);
-
+        var amqpQueryNode = mutNode(query);
 
         g.add(amqpQueryNode);
 

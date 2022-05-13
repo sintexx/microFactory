@@ -3,6 +3,7 @@ package org.niels.master;
 import org.niels.master.generation.ServiceRepresentation;
 import org.niels.master.generation.containers.KubernetesRunner;
 import org.niels.master.model.ModelReader;
+import org.niels.master.serviceGraph.GraphVisualizer;
 import org.niels.master.serviceGraph.ServiceModel;
 import org.niels.master.serviceGraph.metrics.MetricWriter;
 
@@ -13,7 +14,7 @@ import java.net.URISyntaxException;
 
 public class Main {
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException {
-        var modelConfig = ModelReader.readModel(new File(Main.class.getClassLoader().getResource("./models/sampleModel.json").toURI()));
+        var modelConfig = ModelReader.readModel(new File(Main.class.getClassLoader().getResource("./models/ftgo.json").toURI()));
 
         var model = new ServiceModel(modelConfig);
 
@@ -22,6 +23,8 @@ public class Main {
         writer.createWorkbookWithMetrics();
 
         writer.writeToFile(new File("metrics.xlsx"));
+
+        GraphVisualizer.writeGraphAsSvg(model, new File("graph.svg"));
 
         var createdServices = model.generateArtifacts();
 

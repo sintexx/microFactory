@@ -7,6 +7,7 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.logging.Logger;
 import org.jetbrains.annotations.Nullable;
+import org.niels.master.generation.CodeConstants;
 import org.niels.master.generation.CodeGenUtils;
 import org.niels.master.model.interfaces.HttpInterface;
 
@@ -50,6 +51,8 @@ public class RestClientGenerator {
         var endpointMethodBuilder = MethodSpec.methodBuilder(httpInterface.getClientMethodName())
                 .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
 
+        this.addParameterToRestClient(httpInterface, endpointMethodBuilder);
+
         ClassName fallbackClass = addReturnTypeToRestClient(httpInterface, endpointMethodBuilder);
 
         // NONE
@@ -86,6 +89,20 @@ public class RestClientGenerator {
                 fallbackFile.typeSpec.name);
 
         return new RestClient(standard, retry, fallback);
+    }
+
+    private void addParameterToRestClient(HttpInterface httpInterface, MethodSpec.Builder endpointMethodBuilder) {
+        switch (httpInterface.getIn()) {
+            case SINGLE -> {
+                endpointMethodBuilder.addParameter(ParameterSpec.builder(this.dataModelClass, CodeConstants.singleDataVariable).build());
+            }
+            case LIST -> {
+                var param = ParameterizedTypeName.get(ClassName.bestGuess("java.util.List"), dataModelClass);
+
+                endpointMethodBuilder.addParameter(ParameterSpec.builder(param, CodeConstants.listDataVariable).build());
+
+            }
+        }
     }
 
     @Nullable

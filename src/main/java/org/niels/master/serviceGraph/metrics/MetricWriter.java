@@ -1,6 +1,5 @@
 package org.niels.master.serviceGraph.metrics;
 
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -16,6 +15,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -23,7 +24,6 @@ public class MetricWriter {
     private static Logger logger = LoggerFactory.getLogger(MetricWriter.class);
 
     private Workbook workbook;
-    private Sheet sheet;
 
     private ServiceModel serviceModel;
 
@@ -33,38 +33,81 @@ public class MetricWriter {
 
     public void createWorkbookWithMetrics() {
         this.workbook = new XSSFWorkbook();
-        sheet = workbook.createSheet("Metrics");
 
-        var calc = new MetricCalculator(serviceModel);
+        var serviceMetricCalculator = new ServiceMetricCalculator(serviceModel);
 
-        var allServicesWithMetrics = serviceModel.getConfig().getServices().stream().map(s -> calc.calculateMetricForService(s)).collect(Collectors.toList());
+        var allServicesWithMetrics = serviceModel
+                .getConfig().getServices().stream()
+                .map(s -> new ServiceWithMetrics(s, serviceMetricCalculator.calculateMetricForService(s))).collect(Collectors.toList());
 
-        int currentRow = 0;
-        int currentCell = 1;
 
-        Row r = sheet.createRow(currentRow);
 
-        for (var s : serviceModel.getConfig().getServices()) {
-            r.createCell(currentCell).setCellValue(s.getName());
-            currentCell++;
-        }
+        this.addServiceMetrics(allServicesWithMetrics);
+        this.addAverageHandlingMetrics(allServicesWithMetrics);
+        this.addGraphImage();
 
-        for (int i = 0; i < currentCell; i++) {
-            this.sheet.autoSizeColumn(i);
-        }
+    }
 
-        currentRow++;
+    private void addAverageHandlingMetrics(List<ServiceWithMetrics> allServicesWithMetrics) {
+        var sheet = workbook.createSheet("Metric Averages per handling");
 
+        var allHandlings = this.serviceModel.getAllHandlings();
+
+        var handlingMetricCalculator = new HandlingMetricCalculator(allServicesWithMetrics);
+
+        var allHandlingsWithMetricAverages = allHandlings.stream().map(s -> handlingMetricCalculator.getAveragesOfMetricsPerHandling(s)).collect(Collectors.toList());
+
+
+
+        createHeaderRow(sheet, allHandlings);
+
+        var currentRow = 1;
 
         for (Metric m : Arrays.asList(Metric.values())) {
-            r = sheet.createRow(currentRow);
+            var r = sheet.createRow(currentRow);
 
             r.createCell(0).setCellValue(m.toString());
-            currentCell = 1;
-            for (Map<Metric, Object> serviceWithMetrics : allServicesWithMetrics) {
+            var currentCell = 1;
+            for (var handlingWithMetricAverages : allHandlingsWithMetricAverages) {
 
-                if (serviceWithMetrics.containsKey(m)) {
-                    var value = serviceWithMetrics.get(m);
+                if (handlingWithMetricAverages.containsKey(m)) {
+                    var value =handlingWithMetricAverages.get(m);
+
+                    if (value instanceof Integer i) {
+                        r.createCell(currentCell).setCellValue(i);
+
+                    } else if (value instanceof Double i) {
+                        r.createCell(currentCell).setCellValue(i);
+                    }
+                    else {
+                        r.createCell(currentCell).setCellValue(value.toString());
+                    }
+
+                }
+                currentCell++;
+            }
+            currentRow++;
+        }
+        sheet.autoSizeColumn(0);
+
+    }
+
+    private void addServiceMetrics(List<ServiceWithMetrics> allServicesWithMetrics) {
+        var sheet = workbook.createSheet("Service Metrics");
+
+        createHeaderRow(sheet, serviceModel.getConfig().getServices().stream().map(s -> s.getName()).collect(Collectors.toList()));
+
+        var currentRow = 1;
+
+        for (Metric m : Arrays.asList(Metric.values())) {
+            var r = sheet.createRow(currentRow);
+
+            r.createCell(0).setCellValue(m.toString());
+            var currentCell = 1;
+            for (var serviceWithMetrics : allServicesWithMetrics) {
+
+                if (serviceWithMetrics.getMetrics().containsKey(m)) {
+                    var value = serviceWithMetrics.getMetrics().get(m);
 
                     if (value instanceof Integer i) {
                         r.createCell(currentCell).setCellValue(i);
@@ -78,14 +121,26 @@ public class MetricWriter {
             currentRow++;
         }
 
-        this.addGraphImage();
+        sheet.autoSizeColumn(0);
 
     }
 
+    private void createHeaderRow(Sheet sheet, Collection<String> names) {
+        int currentCell = 1;
+
+        Row r = sheet.createRow(0);
+
+        for (var s : names) {
+            r.createCell(currentCell).setCellValue(s);
+            currentCell++;
+        }
+
+        for (int i = 0; i < currentCell; i++) {
+            sheet.autoSizeColumn(i);
+        }
+    }
+
     public void writeToFile(File output) throws IOException {
-
-        this.sheet.autoSizeColumn(0);
-
         FileOutputStream outputStream = new FileOutputStream(output);
         workbook.write(outputStream);
         workbook.close();

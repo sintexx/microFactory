@@ -8,9 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper=true)
-public class HttpServiceCall extends Logic {
-    private String service;
-    private String method;
+public class HttpServiceCall extends ServiceCall {
+    private String endpoint;
 
     private Fallback fallback = Fallback.NONE;
 

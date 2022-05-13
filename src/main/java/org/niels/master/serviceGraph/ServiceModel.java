@@ -14,10 +14,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 public class ServiceModel {
@@ -58,6 +56,16 @@ public class ServiceModel {
         return createdServices;
 
 
+    }
+
+    public Set<String> getAllHandlings() {
+        var res = this.config.getServices().stream().map(s -> {
+            return s.getInterfaces().stream().map(i -> {
+                return i.getPartOfHandling();
+            }).collect(Collectors.toList());
+        }).flatMap(List::stream).collect(Collectors.toSet()).stream().flatMap(Set::stream).collect(Collectors.toSet());
+
+        return res;
     }
 
     @NotNull

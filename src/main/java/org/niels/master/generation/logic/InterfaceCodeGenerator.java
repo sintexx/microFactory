@@ -157,7 +157,7 @@ public class InterfaceCodeGenerator {
     private void createServiceCallLogic(TypeSpec.Builder resourceClassBuilder, ArrayList<CodeBlock> codeSteps, HttpServiceCall serviceCall) {
         var calledService = this.serviceModel.getServiceByName().get(serviceCall.getService());
 
-        if (calledService.getInterfaceByName(serviceCall.getMethod()) instanceof HttpInterface calledHttpInterface) {
+        if (calledService.getInterfaceByName(serviceCall.getEndpoint()) instanceof HttpInterface calledHttpInterface) {
             var restClientClasses = this.restClientGenerator.generateRestClientIfNotExit(calledService.getName(), calledHttpInterface);
 
             var serviceFieldName = calledService.getName() + calledHttpInterface.getName() + "Client";
@@ -225,15 +225,17 @@ public class InterfaceCodeGenerator {
             switch (dbAccess.getMethod()) {
 
                 case GET_SINGLE -> {
+                    codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + " = $T.findById((long)$L)", dataModelClass, (long)1));
                 }
                 case GET_LIST -> {
                     codeSteps.add(CodeBlock.of(CodeConstants.listDataVariable + " = $T.listAll()", dataModelClass));
                 }
                 case SAVE_SINGLE -> {
+                    codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + ".id = null"));
                     codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + ".persist()"));
                 }
                 case SAVE_LIST -> {
-                    codeSteps.add(CodeBlock.of(CodeConstants.listDataVariable + ".stream().forEach(d -> d.persist())"));
+                    codeSteps.add(CodeBlock.of(CodeConstants.listDataVariable + ".stream().forEach(d -> {d.id = null;d.persist();})"));
                 }
             }
     }

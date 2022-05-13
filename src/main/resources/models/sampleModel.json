@@ -7,6 +7,7 @@
       "interfaces": [
         {
           "name": "process",
+          "partOfHandling": ["writeLog"],
           "type": "http",
           "method": "POST",
           "in": "single",
@@ -16,6 +17,7 @@
             {
               "type": "amqpServiceCall",
               "query": "logChanged",
+              "service": "layer2",
               "out": "single"
             }
           ]
@@ -30,6 +32,7 @@
         {
           "name": "getLogs",
           "type": "http",
+          "partOfHandling": ["retrieveLog"],
           "method": "GET",
           "in": "none",
           "out": "list",
@@ -43,6 +46,7 @@
         {
           "name": "logChange",
           "query": "logChanged",
+          "partOfHandling": ["writeLog"],
           "type": "amqp",
           "in": "single",
           "logic": [

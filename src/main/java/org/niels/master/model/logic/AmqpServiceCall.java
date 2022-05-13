@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class AmqpServiceCall extends Logic {
+public class AmqpServiceCall extends ServiceCall {
     private String query;
     private AmqpCallOut out;
 

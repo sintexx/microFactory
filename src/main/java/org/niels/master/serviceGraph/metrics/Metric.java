@@ -14,8 +14,19 @@ public enum Metric {
     DEPENDENCIES_SIMPLE_FAILOVER("Number of Dependencies with Simple Failover"),
     DEPENDENCIES_COMPLEX_FAILOVER("Number of Dependencies with Complex Failover"),
 
-    IS_PART_OF_CYCLE("Part of Communication Cycle");
+    IS_PART_OF_CYCLE("Part of Communication Cycle"),
 
+    ABSOLUT_IMPORTANCE_OF_THE_SERVICE("Absolute Importance of the Service (AIS)"),
+
+    ABSOLUT_DEPENDENCE_OF_THE_SERVICE("Absolute Dependence of the Service (ADS)"),
+
+    ABSOLUT_CRITICALITY_OF_SERVICE("Absolute Criticality of the Service (ACS)"),
+
+    RELATIVE_IMPORTANCE_OF_THE_SERVICE("Relative Importance of Service (RIS)"),
+
+    RELATIVE_DEPENDENCE_OF_THE_SERVICE("Relative Dependence of the Service (RDS)"),
+
+    RELATIVE_CRITICALITY_OF_SERVICE("RELATIVE Criticality of the Service (RCS)");
 
 
     private final String text;

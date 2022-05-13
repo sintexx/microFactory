@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.niels.master.model.logic.Logic;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -15,6 +16,8 @@ public class Interface {
     protected InputType in = InputType.NONE;
     protected OutputType out = OutputType.NONE;
     protected Integer time;
+
+    protected Set<String> partOfHandling;
 
     protected List<Logic> logic;
 

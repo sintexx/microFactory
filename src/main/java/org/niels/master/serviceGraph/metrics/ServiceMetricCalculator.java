@@ -1,19 +1,18 @@
 package org.niels.master.serviceGraph.metrics;
 
 import org.niels.master.model.Service;
-import org.niels.master.model.logic.AmqpServiceCall;
-import org.niels.master.model.logic.DatabaseAccess;
-import org.niels.master.model.logic.HttpServiceCall;
+import org.niels.master.model.logic.*;
 import org.niels.master.serviceGraph.ServiceModel;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
-public class MetricCalculator {
+public class ServiceMetricCalculator {
 
 
     private ServiceModel serviceModel;
 
-    public MetricCalculator(ServiceModel serviceModel) {
+    public ServiceMetricCalculator(ServiceModel serviceModel) {
 
         this.serviceModel = serviceModel;
     }
@@ -40,9 +39,7 @@ public class MetricCalculator {
 
         metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, calculateMayAffectedServiceChain(service));
 
-        var maxDependencies = service.getInterfaces().stream().map(i -> i.getLogic())
-                .map(l -> l.stream().filter(logicStep -> !(logicStep instanceof DatabaseAccess)).count())
-                .mapToLong(Long::longValue).max().getAsLong();
+        long maxDependencies = getMaxAffectedDependencies(service);
 
         metrics.put(Metric.MAX_AFFECTED_SERVICES_PER_HANDLING, (int)maxDependencies);
 
@@ -53,13 +50,64 @@ public class MetricCalculator {
 
         metrics.put(Metric.IS_PART_OF_CYCLE, checkIfPartOfCycle(service));
 
+        var ABSOLUT_IMPORTANCE_OF_THE_SERVICE = getAllDependentServices(service.getName()).size();
+        metrics.put(Metric.ABSOLUT_IMPORTANCE_OF_THE_SERVICE, ABSOLUT_IMPORTANCE_OF_THE_SERVICE);
+
+        var ABSOLUT_DEPENDENCE_OF_THE_SERVICE = countDependenciesByType(service, ServiceCall.class);
+
+        metrics.put(Metric.ABSOLUT_DEPENDENCE_OF_THE_SERVICE, ABSOLUT_DEPENDENCE_OF_THE_SERVICE);
+
+        var ABSOLUT_CRITICALITY_OF_SERVICE = ABSOLUT_IMPORTANCE_OF_THE_SERVICE * ABSOLUT_DEPENDENCE_OF_THE_SERVICE;
+        metrics.put(Metric.ABSOLUT_CRITICALITY_OF_SERVICE, ABSOLUT_CRITICALITY_OF_SERVICE);
+
+        // Set in context to overall count
+        metrics.put(Metric.RELATIVE_IMPORTANCE_OF_THE_SERVICE, ABSOLUT_IMPORTANCE_OF_THE_SERVICE / (double)this.serviceModel.getConfig().getServices().size());
+        metrics.put(Metric.RELATIVE_DEPENDENCE_OF_THE_SERVICE, ABSOLUT_DEPENDENCE_OF_THE_SERVICE / (double)this.serviceModel.getConfig().getServices().size());
+        metrics.put(Metric.RELATIVE_CRITICALITY_OF_SERVICE, ABSOLUT_CRITICALITY_OF_SERVICE / (double)this.serviceModel.getConfig().getServices().size());
+
+
         return metrics;
     }
 
+    private long getMaxAffectedDependencies(Service service) {
+        var res = service.getInterfaces().stream().map(i -> i.getLogic())
+                .map(l -> l.stream().filter(logicStep -> !(logicStep instanceof DatabaseAccess)).count())
+                .mapToLong(Long::longValue).max();
+
+
+        if (res.isPresent()) {
+            return (int)res.getAsLong();
+        }
+
+        return 0;
+    }
+
     private int countDependenciesByType(Service service, Class<?> type) {
-        return (int)service.getInterfaces().stream().map(i -> i.getLogic())
+        var res = service.getInterfaces().stream().map(i -> i.getLogic())
                 .map(l -> l.stream().filter(logicStep -> type.isInstance(logicStep)).count())
-                .mapToLong(Long::longValue).max().getAsLong();
+                .mapToLong(Long::longValue).max();
+
+        if (res.isPresent()) {
+            return (int)res.getAsLong();
+        }
+
+        return 0;
+    }
+
+    private List<Service> getAllDependentServices(String serviceName) {
+        return this.serviceModel.getConfig().getServices().stream().filter(service -> {
+             return service.getInterfaces().stream().map(i -> i.getLogic())
+                    .filter(l -> {
+                        for (Logic logic : l) {
+                            if (logic instanceof ServiceCall serviceCall) {
+                                if (serviceCall.getService().equals(serviceName)) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }).count() > 0;
+        }).collect(Collectors.toList());
     }
 
     private int countDependenciesByFailover(Service service, HttpServiceCall.Fallback fallbackType) {
