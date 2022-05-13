@@ -1,5 +1,6 @@
 package org.niels.master;
 
+import org.apache.commons.io.FileUtils;
 import org.niels.master.generation.ServiceRepresentation;
 import org.niels.master.generation.containers.KubernetesRunner;
 import org.niels.master.model.ModelReader;
@@ -11,6 +12,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 
 public class Main {
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException {
@@ -22,9 +24,14 @@ public class Main {
 
         writer.createWorkbookWithMetrics();
 
-        writer.writeToFile(new File("metrics.xlsx"));
+        var output =  new File("stats").toPath();
 
-        GraphVisualizer.writeGraphAsSvg(model, new File("graph.svg"));
+        FileUtils.deleteDirectory(output.toFile());
+        output.toFile().mkdir();
+
+        writer.writeToFile(output.resolve("metrics.xlsx").toFile());
+
+        GraphVisualizer.writeAllHandlingGraphs(model, output.resolve("handlingGraphs").toFile());
 
         var createdServices = model.generateArtifacts();
 

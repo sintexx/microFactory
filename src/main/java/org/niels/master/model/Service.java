@@ -20,4 +20,8 @@ public class Service {
     public Interface getInterfaceByName(String name) {
         return interfaces.stream().filter(i -> i.getName().equals(name)).findFirst().get();
     }
+
+    public boolean isPartOfHandling(String handling) {
+        return this.interfaces.stream().filter(i -> i.getPartOfHandling().contains(handling)).count() > 0;
+    }
 }
