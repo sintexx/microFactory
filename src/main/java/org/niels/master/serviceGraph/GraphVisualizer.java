@@ -1,9 +1,9 @@
 package org.niels.master.serviceGraph;
 
-import guru.nidi.graphviz.attribute.Rank;
-import guru.nidi.graphviz.attribute.Records;
+import guru.nidi.graphviz.attribute.*;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
+import guru.nidi.graphviz.engine.GraphvizCmdLineEngine;
 import guru.nidi.graphviz.model.Compass;
 import guru.nidi.graphviz.model.MutableGraph;
 import guru.nidi.graphviz.model.MutableNode;
@@ -31,6 +31,8 @@ import static guru.nidi.graphviz.model.Factory.port;
 public class GraphVisualizer {
 
     public static void writeAllHandlingGraphs(ServiceModel serviceModel, File output) throws IOException {
+        Graphviz.useEngine(new GraphvizCmdLineEngine());
+
         for (String allHandling : serviceModel.getAllHandlings()) {
             writeHandlingGraphAsSvg(serviceModel, allHandling,
                     output.toPath().resolve(allHandling + ".svg").toFile());
@@ -50,6 +52,8 @@ public class GraphVisualizer {
     }
 
     public static void writeGraphAsSvg(ServiceModel serviceModel, File out) throws IOException {
+
+        Graphviz.useEngine(new GraphvizCmdLineEngine());
 
         MutableGraph g = createGraph(serviceModel, null);
 
@@ -81,11 +85,22 @@ public class GraphVisualizer {
 
             var serviceNode = mutNode(service.getName());
 
+            serviceNode.attrs().add(Shape.NONE);
+
             allServiceNodes.put(service.getName(), serviceNode);
 
-            var ports = new ArrayList<>();
+            var tableBuilder = new StringBuilder("<table border=\"0\" cellspacing=\"0\">" + System.lineSeparator());
+
+            var serviceColor = "white";
+
+            if (service.getColor() != null) {
+                serviceColor = service.getColor();
+            }
+
+            tableBuilder.append("<tr><td port=\"serviceName\" border=\"1\" bgcolor=\"" + serviceColor + "\"><b>" + service.getName() + "</b></td></tr>" + System.lineSeparator());
+
             for (Interface anInterface : service.getInterfaces()) {
-                ports.add(rec(anInterface.getName(), anInterface.getName()));
+                tableBuilder.append("<tr><td port=\"" + anInterface.getName() + "\" border=\"1\">" + anInterface.getName() + "</td></tr>" + System.lineSeparator());
 
                 if (anInterface instanceof AmqpInterface amqpInterface) {
 
@@ -98,7 +113,11 @@ public class GraphVisualizer {
 
             }
 
-            serviceNode.add(Records.of(ArrayUtils.addAll(new String[]{service.getName() }, ports.toArray(new String[0]))));
+
+            tableBuilder.append("</table>");
+
+
+            serviceNode.setName(Label.html(tableBuilder.toString()));
 
             g.add(serviceNode);
 

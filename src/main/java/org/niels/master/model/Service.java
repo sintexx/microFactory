@@ -16,6 +16,8 @@ public class Service {
     private String dbms;
     private String database;
 
+    private String color;
+
 
     private List<Interface> interfaces;
 

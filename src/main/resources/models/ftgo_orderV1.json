@@ -20,6 +20,7 @@
       "name": "dispatch",
       "dbms": "maindbms",
       "database": "dispatch",
+      "color": "lightpink",
       "interfaces": [
         {
           "name": "driverStartShift",
