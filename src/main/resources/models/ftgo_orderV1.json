@@ -1,6 +1,122 @@
 {
   "services":[
     {
+      "name": "drivers",
+      "dbms": "maindbms",
+      "database": "drivers",
+      "interfaces": [
+        {
+          "name": "assignOrder",
+          "query": "assignOrder",
+          "partOfHandling": ["driverManagement"],
+          "type": "amqp",
+          "in": "single",
+          "logic": [
+          ]
+        }
+        ]
+    },
+    {
+      "name": "dispatch",
+      "dbms": "maindbms",
+      "database": "dispatch",
+      "interfaces": [
+        {
+          "name": "driverStartShift",
+          "partOfHandling": [
+            "driverManagement"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
+          "name": "driverEndShift",
+          "partOfHandling": [
+            "driverManagement"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
+          "name": "reportLocation",
+          "query": "reportLocation",
+          "partOfHandling": ["driverManagement"],
+          "type": "amqp",
+          "in": "single",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
+          "name": "findNearestFreeDrivers",
+          "partOfHandling": [
+            "menu"
+          ],
+          "type": "http",
+          "method": "GET",
+          "in": "single",
+          "out": "list",
+          "workload": 1,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 4
+            }
+          ]},
+        {
+          "name": "assignToNearestDriver",
+          "partOfHandling": [
+            "orderFood"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "workload": 2,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "single"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "assignOrder",
+              "service": "drivers",
+              "out": "single"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "paymentprovider",
       "dbms": "maindbms",
       "database": "payment",
@@ -307,6 +423,13 @@
               "query": "notifyDelivery",
               "service": "notification",
               "out": "single"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "assignToNearestDriver",
+              "service": "dispatch",
+              "out": "none",
+              "in": "single"
             }
           ]
         },
@@ -320,7 +443,15 @@
           "method": "GET",
           "in": "single",
           "out": "single",
-          "logic": []
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "findNearestFreeDrivers",
+              "service": "dispatch",
+              "out": "list",
+              "in": "single"
+            }
+          ]
         }
       ]
     }
@@ -329,7 +460,7 @@
     {
       "name": "maindbms",
       "databases": ["accounting", "notification", "ordersdb", "restaurant", "kitchen", "delivery",
-        "menu", "pricecalculator", "payment"]
+        "menu", "pricecalculator", "payment", "dispatch", "drivers"]
     }
   ]
 }
