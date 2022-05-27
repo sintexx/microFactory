@@ -49,6 +49,7 @@ public class AmqpInterfaceGenerator {
         var endpointMethodBuilder = MethodSpec.methodBuilder("process")
                 .addModifiers(Modifier.PUBLIC)
                 .addAnnotation(Blocking.class)
+                .addAnnotation(Traced.class)
                 .addAnnotation(AnnotationSpec.builder(Incoming.class)
                         .addMember("value", "$S", endpoint.getQuery()).build())
                 .returns(void.class);

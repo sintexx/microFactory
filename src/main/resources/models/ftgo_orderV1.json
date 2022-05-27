@@ -1,6 +1,63 @@
 {
   "services":[
     {
+      "name": "paymentprovider",
+      "dbms": "maindbms",
+      "database": "payment",
+      "interfaces": [
+        {
+          "name": "chargeUser",
+          "partOfHandling": [
+            "billing"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        }]
+    },
+    {
+      "name": "pricecalculator",
+      "dbms": "maindbms",
+      "database": "pricecalculator",
+      "interfaces": [
+        {
+          "name": "calculateUserPrice",
+          "partOfHandling": ["menu"],
+          "type": "http",
+          "method": "GET",
+          "in": "list",
+          "out": "list",
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "checkCoupons",
+              "service": "accounting",
+              "out": "list",
+              "in": "single"
+            },
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "restaurantMenu",
+              "service": "restaurant",
+              "out": "list",
+              "in": "none"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "itemviewer",
       "dbms": "maindbms",
       "database": "menu",
@@ -15,17 +72,17 @@
         "logic": [
           {
             "type": "httpServiceCall",
-            "endpoint": "restaurantMenu",
-            "service": "restaurant",
-            "out": "list",
-            "in": "none"
-          },
-          {
-            "type": "httpServiceCall",
             "endpoint": "deliveryEstimate",
             "service": "delivery",
             "out": "single",
             "in": "single"
+          },
+          {
+            "type": "httpServiceCall",
+            "endpoint": "calculateUserPrice",
+            "service": "pricecalculator",
+            "out": "list",
+            "in": "list"
           }
         ]
       }
@@ -54,6 +111,45 @@
               "method": "getSingle"
             }
           ]
+        }, {
+          "name": "checkCoupons",
+          "partOfHandling": ["menu"],
+          "type": "http",
+          "method": "GET",
+          "in": "single",
+          "out": "list",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            }
+          ]
+        },
+        {
+          "name": "billOrder",
+          "partOfHandling": ["billing"],
+          "query": "billForOrder",
+          "type": "amqp",
+          "int": "single",
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "chargeUser",
+              "service": "paymentprovider",
+              "out": "none",
+              "in": "single"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "notifyOfPayment",
+              "service": "notification",
+              "out": "single"
+            },
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
         }
       ]
     },
@@ -63,9 +159,22 @@
       "database": "notification",
       "interfaces": [
         {
-          "name": "sendNotification",
-          "query": "sendNotification",
-          "partOfHandling": ["sendNotification"],
+          "name": "notifyDelivery",
+          "query": "notifyDelivery",
+          "partOfHandling": ["orderFood"],
+          "type": "amqp",
+          "in": "single",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
+          "name": "notifyOfPayment",
+          "query": "notifyOfPayment",
+          "partOfHandling": ["billing"],
           "type": "amqp",
           "in": "single",
           "logic": [
@@ -106,34 +215,7 @@
               "in": "single"
             }
           ]
-        },
-        {
-          "name": "foodIsReady",
-          "partOfHandling": [
-            "orderFood"
-          ],
-          "type": "http",
-          "method": "POST",
-          "in": "single",
-          "out": "none",
-          "workload": 2,
-          "logic": [
-            {
-              "type": "httpServiceCall",
-              "endpoint": "startDelivery",
-              "service": "delivery",
-              "out": "none",
-              "in": "single"
-            },
-            {
-              "type": "amqpServiceCall",
-              "query": "sendNotification",
-              "service": "notification",
-              "out": "single"
-            }]
         }
-
-
       ]
     },
     {
@@ -172,6 +254,11 @@
             {
               "type": "databaseAccess",
               "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 15
             }
           ]
         }
@@ -191,8 +278,8 @@
           "logic": [
             {
               "type": "httpServiceCall",
-              "endpoint": "foodIsReady",
-              "service": "order",
+              "endpoint": "startDelivery",
+              "service": "delivery",
               "out": "none",
               "in": "single"
             }
@@ -214,7 +301,14 @@
           "method": "POST",
           "in": "single",
           "out": "none",
-          "logic": []
+          "logic": [
+            {
+              "type": "amqpServiceCall",
+              "query": "notifyDelivery",
+              "service": "notification",
+              "out": "single"
+            }
+          ]
         },
         {
           "name": "deliveryEstimate",
@@ -234,7 +328,8 @@
   "databaseServers": [
     {
       "name": "maindbms",
-      "databases": ["accounting", "notification", "ordersdb", "restaurant", "kitchen", "delivery", "menu"]
+      "databases": ["accounting", "notification", "ordersdb", "restaurant", "kitchen", "delivery",
+        "menu", "pricecalculator", "payment"]
     }
   ]
 }

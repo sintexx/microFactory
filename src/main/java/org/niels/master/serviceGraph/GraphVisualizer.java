@@ -35,6 +35,8 @@ public class GraphVisualizer {
             writeHandlingGraphAsSvg(serviceModel, allHandling,
                     output.toPath().resolve(allHandling + ".svg").toFile());
         }
+
+        writeGraphAsSvg(serviceModel, output.toPath().resolve("complete.svg").toFile());
     }
 
     public static byte[] getGraphAsPng(ServiceModel serviceModel) throws IOException {
@@ -86,9 +88,12 @@ public class GraphVisualizer {
                 ports.add(rec(anInterface.getName(), anInterface.getName()));
 
                 if (anInterface instanceof AmqpInterface amqpInterface) {
-                    var queryNode = getOrCreateAmqpQueryNode(amqpNodes, amqpInterface.getQuery(), g);
 
-                    queryNode.addLink(between(port(anInterface.getName()), serviceNode));
+                    if (amqpInterface.getPartOfHandling().contains(handling) || handling == null) {
+                        var queryNode = getOrCreateAmqpQueryNode(amqpNodes, amqpInterface.getQuery(), g);
+
+                        queryNode.addLink(between(port(anInterface.getName()), serviceNode));
+                    }
                 }
 
             }

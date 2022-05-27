@@ -10,10 +10,8 @@ import org.niels.master.generation.CodeConstants;
 import org.niels.master.generation.clients.RestClientGenerator;
 import org.niels.master.model.interfaces.HttpInterface;
 import org.niels.master.model.interfaces.Interface;
-import org.niels.master.model.logic.AmqpServiceCall;
+import org.niels.master.model.logic.*;
 import org.niels.master.model.logic.DatabaseAccess;
-import org.niels.master.model.logic.Logic;
-import org.niels.master.model.logic.HttpServiceCall;
 import org.niels.master.serviceGraph.ServiceModel;
 
 import javax.inject.Inject;
@@ -120,6 +118,21 @@ public class InterfaceCodeGenerator {
             if (logic instanceof AmqpServiceCall amqpServiceCall) {
                 new AmqpServiceCallCode(this.dataModelClass)
                         .createAmqpServiceCallLogic(resourceClassBuilder, codeSteps, amqpServiceCall);
+            }
+
+            if (logic instanceof InsertMock insertMock) {
+                if (insertMock.getTargetVariable() == InsertMock.TargetVariable.SINGLE) {
+                    codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + " = new $T($S)", this.dataModelClass, method.getName()));
+                }
+
+                if (insertMock.getTargetVariable() == InsertMock.TargetVariable.LIST) {
+                    CodeBlock.builder().beginControlFlow("for (int i = 0; i < " + insertMock.getSize() + "; i++)")
+                            .addStatement(CodeConstants.listDataVariable + ".add(new $T($S))", this.dataModelClass, method.getName())
+                            .endControlFlow()
+                            .endControlFlow();
+                }
+
+
             }
         }
 

@@ -14,5 +14,7 @@ public class Logic {
         DATABASE_ACCESS,
         @SerializedName("serviceCall")
         SERVICE_CALL,
+        @SerializedName("insertMock")
+        INSERT_MOCK,
     }
 }

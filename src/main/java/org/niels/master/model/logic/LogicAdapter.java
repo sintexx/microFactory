@@ -21,6 +21,9 @@ public class LogicAdapter implements JsonDeserializer<Logic> {
             case "amqpServiceCall":
                 klass = AmqpServiceCall.class;
                 break;
+            case "insertMock":
+                klass = InsertMock.class;
+                break;
             default:
                 return null;
         }

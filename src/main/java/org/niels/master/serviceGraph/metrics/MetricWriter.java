@@ -45,7 +45,7 @@ public class MetricWriter {
         this.addServiceMetrics(allServicesWithMetrics);
         this.addAverageHandlingMetrics(allServicesWithMetrics);
         this.addHandlingWorkload();
-        this.addGraphImage();
+        // this.addGraphImage();
 
     }
 
