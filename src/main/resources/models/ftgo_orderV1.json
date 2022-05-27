@@ -1,6 +1,37 @@
 {
   "services":[
     {
+      "name": "itemviewer",
+      "dbms": "maindbms",
+      "database": "menu",
+      "interfaces": [{
+        "name": "getMenu",
+        "partOfHandling": ["menu"],
+        "type": "http",
+        "method": "GET",
+        "in": "none",
+        "out": "list",
+        "workload": 1,
+        "logic": [
+          {
+            "type": "httpServiceCall",
+            "endpoint": "restaurantMenu",
+            "service": "restaurant",
+            "out": "list",
+            "in": "none"
+          },
+          {
+            "type": "httpServiceCall",
+            "endpoint": "deliveryEstimate",
+            "service": "delivery",
+            "out": "single",
+            "in": "single"
+          }
+        ]
+      }
+      ]
+    },
+    {
       "name": "accounting",
       "dbms": "maindbms",
       "database": "accounting",
@@ -12,6 +43,7 @@
           "method": "POST",
           "in": "single",
           "out": "single",
+          "workload": 2,
           "logic": [
             {
               "type": "databaseAccess",
@@ -57,6 +89,7 @@
           "method": "POST",
           "in": "single",
           "out": "none",
+          "workload": 2,
           "logic": [
             {
               "type": "httpServiceCall",
@@ -83,6 +116,7 @@
           "method": "POST",
           "in": "single",
           "out": "none",
+          "workload": 2,
           "logic": [
             {
               "type": "httpServiceCall",
@@ -126,6 +160,20 @@
               "out": "single"
             }
           ]
+        },
+        {
+          "name": "restaurantMenu",
+          "partOfHandling": ["menu"],
+          "type": "http",
+          "method": "GET",
+          "in": "none",
+          "out": "list",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            }
+          ]
         }
       ]
     },
@@ -167,13 +215,26 @@
           "in": "single",
           "out": "none",
           "logic": []
-        }]
+        },
+        {
+          "name": "deliveryEstimate",
+          "partOfHandling": [
+            "menu"
+          ],
+          "workload": 2,
+          "type": "http",
+          "method": "GET",
+          "in": "single",
+          "out": "single",
+          "logic": []
+        }
+      ]
     }
   ],
   "databaseServers": [
     {
       "name": "maindbms",
-      "databases": ["accounting", "notification", "ordersdb", "restaurant", "kitchen", "delivery"]
+      "databases": ["accounting", "notification", "ordersdb", "restaurant", "kitchen", "delivery", "menu"]
     }
   ]
 }

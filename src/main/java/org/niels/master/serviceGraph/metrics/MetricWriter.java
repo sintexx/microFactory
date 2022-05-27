@@ -44,6 +44,7 @@ public class MetricWriter {
 
         this.addServiceMetrics(allServicesWithMetrics);
         this.addAverageHandlingMetrics(allServicesWithMetrics);
+        this.addHandlingWorkload();
         this.addGraphImage();
 
     }
@@ -56,8 +57,6 @@ public class MetricWriter {
         var handlingMetricCalculator = new HandlingMetricCalculator(allServicesWithMetrics);
 
         var allHandlingsWithMetricAverages = allHandlings.stream().map(s -> handlingMetricCalculator.getAveragesOfMetricsPerHandling(s)).collect(Collectors.toList());
-
-
 
         createHeaderRow(sheet, allHandlings);
 
@@ -92,6 +91,43 @@ public class MetricWriter {
 
     }
 
+    private void addHandlingWorkload() {
+        var sheet = workbook.createSheet("Handling Workloads");
+
+        var calc = new HandlingWorkloadCalculator(this.serviceModel.getConfig().getServices());
+
+
+        Row r = sheet.createRow(0);
+
+        r.createCell(1).setCellValue("dbGetSingle");
+        r.createCell(2).setCellValue("dbGetList");
+        r.createCell(3).setCellValue("dbSaveSingle");
+        r.createCell(4).setCellValue("dbSaveList");
+        r.createCell(5).setCellValue("calculateIterations");
+
+        int currentRow = 1;
+
+        for (String handling : this.serviceModel.getAllHandlings()) {
+            r = sheet.createRow(currentRow);
+
+            var workload = calc.calculateWorkloadOfHandling(handling);
+
+            r.createCell(0).setCellValue(handling);
+            r.createCell(1).setCellValue(workload.getDbGetSingle());
+            r.createCell(2).setCellValue(workload.getDbGetList());
+            r.createCell(3).setCellValue(workload.getDbSaveSingle());
+            r.createCell(4).setCellValue(workload.getDbSaveList());
+            r.createCell(5).setCellValue(workload.getCalculateIterations());
+
+            currentRow++;
+        }
+
+        for (int i = 0; i < 6; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+    }
+
     private void addServiceMetrics(List<ServiceWithMetrics> allServicesWithMetrics) {
         var sheet = workbook.createSheet("Service Metrics");
 
@@ -111,7 +147,10 @@ public class MetricWriter {
 
                     if (value instanceof Integer i) {
                         r.createCell(currentCell).setCellValue(i);
-                    } else {
+                    } else if (value instanceof Double d) {
+                        r.createCell(currentCell).setCellValue(d);
+                    }
+                    else {
                         r.createCell(currentCell).setCellValue(value.toString());
                     }
 

@@ -4,11 +4,15 @@ import com.google.common.graph.Graphs;
 import org.niels.master.model.Service;
 import org.niels.master.model.logic.*;
 import org.niels.master.serviceGraph.ServiceModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ServiceMetricCalculator {
+
+    private static Logger logger = LoggerFactory.getLogger(ServiceMetricCalculator.class);
 
 
     private ServiceModel serviceModel;
@@ -45,7 +49,12 @@ public class ServiceMetricCalculator {
             metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, 999999);
 
         } else {
-            metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, calculateMayAffectedServiceChain(service));
+            try {
+                // metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, calculateMayAffectedServiceChain(service));
+
+            }catch (Exception ex) {
+                logger.error("Overflow on " + service);
+            }
 
         }
 
@@ -148,7 +157,6 @@ public class ServiceMetricCalculator {
 
     private Set<Service> getAllReachable(Service service, Set<Service> res) {
         // Graphs.reachableNodes(this.serviceModel.getServiceGraph(), service)
-        var c = Graphs.hasCycle(this.serviceModel.getServiceGraph());
         for (Service successor : this.serviceModel.getServiceGraph().successors(service)) {
 
             if (res.contains(successor))

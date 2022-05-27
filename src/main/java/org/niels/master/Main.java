@@ -9,14 +9,14 @@ import org.niels.master.serviceGraph.ServiceModel;
 import org.niels.master.serviceGraph.metrics.MetricWriter;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
 
 public class Main {
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException {
-        var modelConfig = ModelReader.readModel(new File(Main.class.getClassLoader().getResource("./models/ftgo.json").toURI()));
+        var configFile = new File(Main.class.getClassLoader().getResource("models/ftgo_orderV1.json").toURI());
+
+        var modelConfig = ModelReader.readModel(configFile);
 
         var model = new ServiceModel(modelConfig);
 
@@ -24,12 +24,14 @@ public class Main {
 
         writer.createWorkbookWithMetrics();
 
-        var output =  new File("stats").toPath();
+        var name = configFile.getName().replace(".json", "");
+
+        var output =  new File("stats" + name).toPath();
 
         FileUtils.deleteDirectory(output.toFile());
-        output.toFile().mkdir();
+       output.toFile().mkdir();
 
-        writer.writeToFile(output.resolve("metrics.xlsx").toFile());
+        writer.writeToFile(output.resolve("metrics" + name + ".xlsx").toFile());
 
         GraphVisualizer.writeAllHandlingGraphs(model, output.resolve("handlingGraphs").toFile());
 

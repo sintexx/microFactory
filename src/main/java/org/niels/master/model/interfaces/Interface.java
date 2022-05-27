@@ -16,6 +16,7 @@ public class Interface {
     protected InputType in = InputType.NONE;
     protected OutputType out = OutputType.NONE;
     protected Integer time;
+    protected Integer workload;
 
     protected Set<String> partOfHandling;
 
