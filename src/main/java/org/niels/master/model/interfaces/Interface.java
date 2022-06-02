@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.niels.master.model.logic.Logic;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -18,9 +20,9 @@ public class Interface {
     protected Integer time;
     protected Integer workload;
 
-    protected Set<String> partOfHandling;
+    protected Set<String> partOfHandling = new HashSet<>();
 
-    protected List<Logic> logic;
+    protected List<Logic> logic = new ArrayList<>();
 
     public enum Type {
         @SerializedName("http")

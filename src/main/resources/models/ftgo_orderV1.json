@@ -1,6 +1,50 @@
 {
   "services":[
     {
+      "name": "storehouse",
+      "dbms": "maindbms",
+      "database": "storehouse",
+      "interfaces": [
+        {
+          "name": "quantityOfIngredient",
+          "partOfHandling": [
+            "menu"
+          ],
+          "type": "http",
+          "method": "GET",
+          "in": "list",
+          "out": "list",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 4
+            }
+          ]
+        },
+        {
+          "name": "consumeIngredients",
+          "partOfHandling": [
+            "orderFood"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "list",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveList"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "drivers",
       "dbms": "maindbms",
       "database": "drivers",
@@ -20,7 +64,6 @@
       "name": "dispatch",
       "dbms": "maindbms",
       "database": "dispatch",
-      "color": "lightpink",
       "interfaces": [
         {
           "name": "driverStartShift",
@@ -153,6 +196,10 @@
           "out": "list",
           "logic": [
             {
+              "type": "insertMock",
+              "targetVariable": "single"
+            },
+            {
               "type": "httpServiceCall",
               "endpoint": "checkCoupons",
               "service": "accounting",
@@ -187,6 +234,10 @@
         "out": "list",
         "workload": 1,
         "logic": [
+          {
+            "type": "insertMock",
+            "targetVariable": "single"
+          },
           {
             "type": "httpServiceCall",
             "endpoint": "deliveryEstimate",
@@ -376,6 +427,18 @@
               "type": "insertMock",
               "targetVariable": "list",
               "size": 15
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "quantityOfIngredient",
+              "service": "storehouse",
+              "out": "list",
+              "in": "list"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 15
             }
           ]
         }
@@ -393,6 +456,13 @@
           "type": "amqp",
           "in": "single",
           "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "consumeIngredients",
+              "service": "storehouse",
+              "out": "none",
+              "in": "list"
+            },
             {
               "type": "httpServiceCall",
               "endpoint": "startDelivery",
@@ -461,7 +531,7 @@
     {
       "name": "maindbms",
       "databases": ["accounting", "notification", "ordersdb", "restaurant", "kitchen", "delivery",
-        "menu", "pricecalculator", "payment", "dispatch", "drivers"]
+        "menu", "pricecalculator", "payment", "dispatch", "drivers", "storehouse"]
     }
   ]
 }

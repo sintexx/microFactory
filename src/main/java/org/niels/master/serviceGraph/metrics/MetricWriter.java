@@ -6,7 +6,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFClientAnchor;
 import org.apache.poi.xssf.usermodel.XSSFDrawing;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.niels.master.serviceGraph.GraphVisualizer;
 import org.niels.master.serviceGraph.ServiceModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -183,28 +182,5 @@ public class MetricWriter {
         FileOutputStream outputStream = new FileOutputStream(output);
         workbook.write(outputStream);
         workbook.close();
-    }
-
-    private void addGraphImage() {
-        try {
-            var imageSheet = workbook.createSheet("Graph");
-            int graphImage = workbook.addPicture(GraphVisualizer.getGraphAsPng(this.serviceModel), Workbook.PICTURE_TYPE_PNG);
-
-            XSSFDrawing drawing = (XSSFDrawing) imageSheet.createDrawingPatriarch();
-
-            XSSFClientAnchor imageAnchor = new XSSFClientAnchor();
-            imageAnchor.setCol1(0);
-            imageAnchor.setCol2(1);
-            imageAnchor.setRow1(0);
-            imageAnchor.setRow2(1);
-
-            var img = drawing.createPicture(imageAnchor, graphImage);
-
-            imageSheet.autoSizeColumn(0);
-            img.resize(6);
-
-        } catch (Exception ex) {
-            logger.error("Error adding graph to excel", ex);
-        }
     }
 }

@@ -2,22 +2,14 @@ package org.niels.master.generation.logic;
 
 import com.squareup.javapoet.*;
 import org.apache.commons.math3.primes.Primes;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jetbrains.annotations.NotNull;
 import org.niels.master.generation.CodeConstants;
 import org.niels.master.generation.clients.RestClientGenerator;
-import org.niels.master.model.interfaces.HttpInterface;
 import org.niels.master.model.interfaces.Interface;
 import org.niels.master.model.logic.*;
 import org.niels.master.model.logic.DatabaseAccess;
 import org.niels.master.serviceGraph.ServiceModel;
 
-import javax.inject.Inject;
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.List;
 
 
 public class InterfaceCodeGenerator {
@@ -40,9 +32,8 @@ public class InterfaceCodeGenerator {
 
         endpointMethodBuilder.addStatement(CodeBlock.of("LOGGER.info($S);", "Method "+ endpoint.getName() + "was called"));
 
-        for (CodeBlock codeBlock : generateStepsForInterfaceLogic(endpoint, resourceClassBuilder)) {
-            endpointMethodBuilder.addStatement(codeBlock);
-        }
+        generateStepsForInterfaceLogic(endpoint, resourceClassBuilder, endpointMethodBuilder);
+
 
         checkAndAddAdditionalSleep(endpoint, endpointMethodBuilder);
 
@@ -101,42 +92,38 @@ public class InterfaceCodeGenerator {
         }
     }
 
-    private List<CodeBlock> generateStepsForInterfaceLogic(Interface method, TypeSpec.Builder resourceClassBuilder) {
-        var codeSteps = new ArrayList<CodeBlock>();
+    private void generateStepsForInterfaceLogic(Interface method, TypeSpec.Builder resourceClassBuilder, MethodSpec.Builder endpointMethodBuilder) {
 
         for (Logic logic : method.getLogic()) {
             if (logic instanceof DatabaseAccess dbAccess) {
                 new org.niels.master.generation.logic.DatabaseAccess(this.dataModelClass)
-                        .createDbAccessLogic(codeSteps, dbAccess);
+                        .createDbAccessLogic(endpointMethodBuilder, dbAccess);
             }
 
             if (logic instanceof HttpServiceCall serviceCall) {
                 new HttpServiceCallCode(this.serviceModel, this.restClientGenerator)
-                        .createHttpServiceCallLogic(resourceClassBuilder, codeSteps, serviceCall);
+                        .createHttpServiceCallLogic(resourceClassBuilder, endpointMethodBuilder, serviceCall);
             }
 
             if (logic instanceof AmqpServiceCall amqpServiceCall) {
                 new AmqpServiceCallCode(this.dataModelClass)
-                        .createAmqpServiceCallLogic(resourceClassBuilder, codeSteps, amqpServiceCall);
+                        .createAmqpServiceCallLogic(resourceClassBuilder, endpointMethodBuilder, amqpServiceCall);
             }
 
             if (logic instanceof InsertMock insertMock) {
                 if (insertMock.getTargetVariable() == InsertMock.TargetVariable.SINGLE) {
-                    codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + " = new $T($S)", this.dataModelClass, method.getName()));
+                    endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.singleDataVariable + " = new $T($S)", this.dataModelClass, method.getName()));
                 }
 
                 if (insertMock.getTargetVariable() == InsertMock.TargetVariable.LIST) {
-                    CodeBlock.builder().beginControlFlow("for (int i = 0; i < " + insertMock.getSize() + "; i++)")
+                    endpointMethodBuilder.beginControlFlow("for (int i = 0; i < " + insertMock.getSize() + "; i++)")
                             .addStatement(CodeConstants.listDataVariable + ".add(new $T($S))", this.dataModelClass, method.getName())
-                            .endControlFlow()
-                            .endControlFlow();
+                            .endControlFlow().build();
                 }
 
 
             }
         }
-
-        return codeSteps;
     }
 
     private void addOutputParameters(Interface endpoint, MethodSpec.Builder endpointMethodBuilder) {

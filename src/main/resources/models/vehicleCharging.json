@@ -1,0 +1,205 @@
+{
+  "services": [
+    {
+      "name": "mapui",
+      "dbms": "maindbms",
+      "database": "map",
+      "interfaces": [
+        {
+          "name": "viewMap",
+          "type": "http",
+          "partOfHandling": ["mapping"],
+          "method": "GET",
+          "in": "single",
+          "out": "list",
+          "workload": 2,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "searchForStationsNearBy",
+              "service": "chargingstations",
+              "out": "list",
+              "in": "list"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 100
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "routing",
+      "dbms": "maindbms",
+      "database": "routing",
+      "interfaces": [
+        {
+          "name": "calculateRoute",
+          "type": "http",
+          "partOfHandling": [
+            "routing"
+          ],
+          "method": "GET",
+          "in": "list",
+          "out": "list",
+          "workload": 2,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "searchForStationsOnRoute",
+              "service": "chargingstations",
+              "out": "list",
+              "in": "list"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+    "name": "chargingstations",
+    "dbms": "maindbms",
+    "database": "chargingstations",
+    "interfaces": [
+      {
+        "name": "searchForStationsNearBy",
+        "type": "http",
+        "partOfHandling": [
+          "stationInformation", "routing", "mapping"
+        ],
+        "method": "GET",
+        "in": "single",
+        "out": "list",
+        "workload": 1,
+        "logic": [
+          {
+            "type": "databaseAccess",
+            "method": "getList"
+          },
+          {
+            "type": "httpServiceCall",
+            "endpoint": "getStationMaintenanceStatus",
+            "service": "stationmaintanance",
+            "out": "list",
+            "in": "list"
+          },
+          {
+            "type": "insertMock",
+            "targetVariable": "list",
+            "size": 50
+          }
+        ]
+      },
+      {
+        "name": "searchForStationsOnRoute",
+        "type": "http",
+        "partOfHandling": [
+          "routing"
+        ],
+        "method": "GET",
+        "in": "list",
+        "out": "list",
+        "workload": 2,
+        "logic": [
+          {
+            "type": "databaseAccess",
+            "method": "getList"
+          },
+          {
+            "type": "insertMock",
+            "targetVariable": "list",
+            "size": 4
+          }
+        ]
+      },
+      {
+        "name": "getStationDetails",
+        "type": "http",
+        "type": "http",
+        "partOfHandling": [
+          "stationInformation"
+        ],
+        "method": "GET",
+        "in": "single",
+        "out": "list",
+        "workload": 1,
+        "logic": [
+          {
+            "type": "databaseAccess",
+            "method": "getList"
+          },
+          {
+            "type": "insertMock",
+            "targetVariable": "list",
+            "size": 5
+          }
+        ]
+      }
+    ]
+    },
+    {
+      "name": "stationmaintanance",
+      "dbms": "maindbms",
+      "database": "stationmaintanance",
+      "interfaces": [
+        {
+          "name": "markStationAsBroken",
+          "type": "http",
+          "partOfHandling": [
+            "maintenance"
+          ],
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
+          "name": "getStationMaintenanceStatus",
+          "type": "http",
+          "partOfHandling": [
+            "stationInformation", "routing", "mapping"
+          ],
+          "method": "GET",
+          "in": "list",
+          "out": "list",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 4
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "databaseServers": [
+    {
+      "name": "maindbms",
+      "databases": ["map","routing","chargingstations","billing","accounting","billingfederation","stationmaintanance" ]
+    }
+  ]
+}

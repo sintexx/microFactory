@@ -2,6 +2,7 @@ package org.niels.master.generation.logic;
 
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.MethodSpec;
 import lombok.AllArgsConstructor;
 import org.niels.master.generation.CodeConstants;
 
@@ -12,21 +13,21 @@ public class DatabaseAccess {
 
     private ClassName dataModelClass;
 
-    public void createDbAccessLogic(ArrayList<CodeBlock> codeSteps, org.niels.master.model.logic.DatabaseAccess dbAccess) {
+    public void createDbAccessLogic(MethodSpec.Builder endpointMethodBuilder, org.niels.master.model.logic.DatabaseAccess dbAccess) {
         switch (dbAccess.getMethod()) {
 
             case GET_SINGLE -> {
-                codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + " = $T.findById((long)$L)", dataModelClass, (long)1));
+                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.singleDataVariable + " = $T.findById((long)$L)", dataModelClass, (long)1));
             }
             case GET_LIST -> {
-                codeSteps.add(CodeBlock.of(CodeConstants.listDataVariable + " = $T.listAll()", dataModelClass));
+                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.listDataVariable + " = $T.listAll()", dataModelClass));
             }
             case SAVE_SINGLE -> {
-                codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + ".id = null"));
-                codeSteps.add(CodeBlock.of(CodeConstants.singleDataVariable + ".persist()"));
+                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.singleDataVariable + ".id = null"));
+                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.singleDataVariable + ".persist()"));
             }
             case SAVE_LIST -> {
-                codeSteps.add(CodeBlock.of(CodeConstants.listDataVariable + ".stream().forEach(d -> {d.id = null;d.persist();})"));
+                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.listDataVariable + ".stream().forEach(d -> {d.id = null;d.persist();})"));
             }
         }
     }

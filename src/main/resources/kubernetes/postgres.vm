@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: $serverName
-          image: postgres14multi:1.0
+          image: registry.gitlab.com/sintexx/microfactory/postgres14multi:1.1
           ports:
             - containerPort: 5432
           env:
@@ -58,4 +58,6 @@ spec:
               value: admin
             - name: POSTGRES_PASSWORD
               value: admin
+      imagePullSecrets:
+        - name: regcred
 ---

@@ -43,7 +43,75 @@ public class RestClientGenerator {
     }
 
     private RestClient generateRestClient(String url, HttpInterface httpInterface) {
-        var typeBuilder = TypeSpec.interfaceBuilder(httpInterface.getName() + "Service")
+
+          var standard = generateStandardMethod(url, httpInterface);
+        var retry = generateWithRetryMethod(url, httpInterface);
+        var fallback = generateWithFallback(url, httpInterface);
+
+        return new RestClient(standard, retry, fallback);
+    }
+
+    private ClassName generateWithFallback(String url, HttpInterface httpInterface) {
+
+        var typeBuilder = TypeSpec.interfaceBuilder(httpInterface.getName() + "ServiceFallback")
+                .addAnnotation(AnnotationSpec.builder(RegisterRestClient.class)
+                        .addMember("baseUri", "$S", "http://" + url + "/" + httpInterface.getName()).build())
+                .addModifiers(Modifier.PUBLIC);
+
+
+        var endpointMethodBuilder = MethodSpec.methodBuilder(httpInterface.getClientMethodName())
+                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
+
+        ClassName fallbackClass = addReturnTypeToRestClient(httpInterface, endpointMethodBuilder);
+
+        addFallbackToRestClient(endpointMethodBuilder, fallbackClass);
+
+        this.addParameterToRestClient(httpInterface, endpointMethodBuilder);
+
+
+        // NONE
+        typeBuilder.addMethod(endpointMethodBuilder.build());
+
+        var retryFile = CodeGenUtils.writeToJavaFile(outputFolder, typeBuilder.build(), "org.niels.master.generated.restClients");
+
+        var retry = ClassName.get(retryFile.packageName,
+                retryFile.typeSpec.name);
+        return retry;
+    }
+
+    private ClassName generateWithRetryMethod(String url, HttpInterface httpInterface) {
+
+        var typeBuilder = TypeSpec.interfaceBuilder(httpInterface.getName() + "ServiceRetry")
+                .addAnnotation(AnnotationSpec.builder(RegisterRestClient.class)
+                        .addMember("baseUri", "$S", "http://" + url + "/" + httpInterface.getName()).build())
+                .addModifiers(Modifier.PUBLIC);
+
+
+        var endpointMethodBuilder = MethodSpec.methodBuilder(httpInterface.getClientMethodName())
+                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
+
+        ClassName fallbackClass = addReturnTypeToRestClient(httpInterface, endpointMethodBuilder);
+
+
+        endpointMethodBuilder.addAnnotation(AnnotationSpec.builder(Retry.class).addMember("maxRetries", "$L",4).build());
+
+
+        this.addParameterToRestClient(httpInterface, endpointMethodBuilder);
+
+
+        // NONE
+        typeBuilder.addMethod(endpointMethodBuilder.build());
+
+        var retryFile = CodeGenUtils.writeToJavaFile(outputFolder, typeBuilder.build(), "org.niels.master.generated.restClients");
+
+        var retry = ClassName.get(retryFile.packageName,
+                retryFile.typeSpec.name);
+        return retry;
+    }
+
+    private ClassName generateStandardMethod(String url, HttpInterface httpInterface) {
+
+        var typeBuilder = TypeSpec.interfaceBuilder(httpInterface.getName() + "ServiceStandard")
                 .addAnnotation(AnnotationSpec.builder(RegisterRestClient.class)
                         .addMember("baseUri", "$S", "http://" + url + "/" + httpInterface.getName()).build())
                 .addModifiers(Modifier.PUBLIC);
@@ -51,9 +119,11 @@ public class RestClientGenerator {
         var endpointMethodBuilder = MethodSpec.methodBuilder(httpInterface.getClientMethodName())
                 .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT);
 
+        ClassName fallbackClass = addReturnTypeToRestClient(httpInterface, endpointMethodBuilder);
+
+
         this.addParameterToRestClient(httpInterface, endpointMethodBuilder);
 
-        ClassName fallbackClass = addReturnTypeToRestClient(httpInterface, endpointMethodBuilder);
 
         // NONE
         typeBuilder.addMethod(endpointMethodBuilder.build());
@@ -62,33 +132,7 @@ public class RestClientGenerator {
 
         var standard = ClassName.get(standardFile.packageName,
                 standardFile.typeSpec.name);
-
-
-        //RETRY
-        typeBuilder.methodSpecs.clear();
-        endpointMethodBuilder.addAnnotation(AnnotationSpec.builder(Retry.class).addMember("maxRetries", "$L",4).build());
-
-        typeBuilder.addMethod(endpointMethodBuilder.build());
-        var retryFile = CodeGenUtils.writeToJavaFile(outputFolder, typeBuilder.build(), "org.niels.master.generated.restClients");
-
-
-        var retry = ClassName.get(retryFile.packageName,
-                retryFile.typeSpec.name);
-
-
-        // COMPLEX
-        typeBuilder.methodSpecs.clear();
-        addFallbackToRestClient(endpointMethodBuilder, fallbackClass);
-
-        typeBuilder.addMethod(endpointMethodBuilder.build());
-
-        var fallbackFile = CodeGenUtils.writeToJavaFile(outputFolder, typeBuilder.build(), "org.niels.master.generated.restClients");
-
-
-        var fallback = ClassName.get(fallbackFile.packageName,
-                fallbackFile.typeSpec.name);
-
-        return new RestClient(standard, retry, fallback);
+        return standard;
     }
 
     private void addParameterToRestClient(HttpInterface httpInterface, MethodSpec.Builder endpointMethodBuilder) {

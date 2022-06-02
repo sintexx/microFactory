@@ -53,7 +53,7 @@ public class ServiceRepresentation {
     }
 
     public void build() throws IOException, InterruptedException {
-        var builder = new ProcessBuilder("gradle", "build").directory(servicePath.toFile()).inheritIO();
+        var builder = new ProcessBuilder("gradle", "build", "-Dquarkus.container-image.push=true").directory(servicePath.toFile()).inheritIO();
 
         builder.start().waitFor();
     }

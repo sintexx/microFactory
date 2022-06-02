@@ -13,7 +13,7 @@ import java.util.ArrayList;
 public class AmqpServiceCallCode {
     private ClassName dataModelClass;
 
-    public void createAmqpServiceCallLogic(TypeSpec.Builder resourceClassBuilder, ArrayList<CodeBlock> codeSteps, AmqpServiceCall amqpServiceCall) {
+    public void createAmqpServiceCallLogic(TypeSpec.Builder resourceClassBuilder, MethodSpec.Builder endpointMethodBuilder, AmqpServiceCall amqpServiceCall) {
         var channelFieldName = amqpServiceCall.getQuery();
 
         if (resourceClassBuilder.fieldSpecs.stream().filter(s -> s.name.equals(channelFieldName)).count() == 0) {
@@ -41,11 +41,11 @@ public class AmqpServiceCallCode {
         switch (amqpServiceCall.getOut()) {
 
             case SINGLE -> {
-                codeSteps.add(CodeBlock.of(channelFieldName + ".send(" + CodeConstants.singleDataVariable + ")"));
+                endpointMethodBuilder.addStatement(CodeBlock.of(channelFieldName + ".send(" + CodeConstants.singleDataVariable + ")"));
 
             }
             case LIST -> {
-                codeSteps.add(CodeBlock.of(channelFieldName + ".send(" + CodeConstants.listDataVariable + ")"));
+                endpointMethodBuilder.addStatement(CodeBlock.of(channelFieldName + ".send(" + CodeConstants.listDataVariable + ")"));
             }
         }
     }

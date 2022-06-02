@@ -14,7 +14,12 @@ import java.net.URISyntaxException;
 
 public class Main {
     public static void main(String[] args) throws URISyntaxException, IOException, InterruptedException {
-        var configFile = new File(Main.class.getClassLoader().getResource("models/ftgo_orderV1.json").toURI());
+
+        var configName = args[0];
+
+        var configFile = new File(Main.class.getClassLoader().getResource("models/" + configName).toURI());
+
+        var content = FileUtils.readFileToString(configFile);
 
         var modelConfig = ModelReader.readModel(configFile);
 
@@ -33,12 +38,12 @@ public class Main {
 
         writer.writeToFile(output.resolve("metrics" + name + ".xlsx").toFile());
 
-        GraphVisualizer.writeAllHandlingGraphs(model, output.resolve("handlingGraphs").toFile());
+        new GraphVisualizer(model).writeAllHandlingGraphs(output.resolve("handlingGraphs").toFile());
 
         var createdServices = model.generateArtifacts();
 
 
-        if (args.length > 0 && args[0].equals("build")) {
+        if (args.length > 1 && args[1].equals("build")) {
             for (ServiceRepresentation createdService : createdServices) {
                 createdService.build();
                 createdService.copyKubernetesYaml();

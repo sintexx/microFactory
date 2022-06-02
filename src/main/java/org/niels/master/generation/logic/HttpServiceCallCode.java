@@ -1,9 +1,6 @@
 package org.niels.master.generation.logic;
 
-import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
-import com.squareup.javapoet.FieldSpec;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.*;
 import lombok.AllArgsConstructor;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jetbrains.annotations.NotNull;
@@ -23,11 +20,11 @@ public class HttpServiceCallCode {
     private RestClientGenerator restClientGenerator;
 
 
-    public void createHttpServiceCallLogic(TypeSpec.Builder resourceClassBuilder, ArrayList<CodeBlock> codeSteps, HttpServiceCall serviceCall) {
+    public void createHttpServiceCallLogic(TypeSpec.Builder resourceClassBuilder, MethodSpec.Builder endpointMethodBuilder, HttpServiceCall serviceCall) {
         var calledService = this.serviceModel.getServiceByName().get(serviceCall.getService());
 
         if (calledService.getInterfaceByName(serviceCall.getEndpoint()) instanceof HttpInterface calledHttpInterface) {
-            var restClientClasses = this.restClientGenerator.generateRestClientIfNotExit(calledService.getName(), calledHttpInterface);
+            var restClientClasses = this.restClientGenerator.generateRestClientIfNotExit(calledService.getName() + ".sim", calledHttpInterface);
 
             var serviceFieldName = calledService.getName() + calledHttpInterface.getName() + "Client";
 
@@ -59,7 +56,7 @@ public class HttpServiceCallCode {
 
             String clientCall = getHttpServiceCallCodeLine(calledHttpInterface, serviceFieldName);
 
-            codeSteps.add(CodeBlock.of(clientCall));
+            endpointMethodBuilder.addStatement(CodeBlock.of(clientCall));
         }
     }
 
