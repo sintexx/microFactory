@@ -25,6 +25,11 @@ public class ServiceModel {
 
     private MutableGraph<Service> serviceGraph;
 
+    public Map<String, MutableGraph<Service>> getGraphPerHandling() {
+        return graphPerHandling;
+    }
+
+    private Map<String, MutableGraph<Service>> graphPerHandling = new HashMap<>();
 
     public ServiceModel(ServiceModelConfig config) {
         this.config = config;
@@ -33,7 +38,11 @@ public class ServiceModel {
             serviceByName.put(service.getName(), service);
         }
 
-        this.serviceGraph = ServiceGraphCalculator.generateGraphModel(this);
+        this.serviceGraph = ServiceGraphCalculator.generateGraphModel(this, null);
+
+        for (String handling : this.getAllHandlings()) {
+            graphPerHandling.put(handling, ServiceGraphCalculator.generateGraphModel(this, handling));
+        }
     }
 
     public List<ServiceRepresentation> generateArtifacts() throws IOException, URISyntaxException {

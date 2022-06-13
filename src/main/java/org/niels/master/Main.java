@@ -42,7 +42,6 @@ public class Main {
 
         var createdServices = model.generateArtifacts();
 
-
         if (args.length > 1 && args[1].equals("build")) {
             for (ServiceRepresentation createdService : createdServices) {
                 createdService.build();

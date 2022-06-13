@@ -6,6 +6,23 @@
       "database": "map",
       "interfaces": [
         {
+          "name": "reserveStation",
+          "type": "http",
+          "partOfHandling": ["reservation"],
+          "method": "GET",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "reserveStation",
+              "service": "chargingstations",
+              "out": "none",
+              "in": "single"
+            }
+          ]
+        },
+        {
           "name": "viewMap",
           "type": "http",
           "partOfHandling": ["mapping"],
@@ -31,6 +48,23 @@
               "size": 100
             }
           ]
+        },
+        {
+          "name": "viewRoute",
+          "type": "http",
+          "partOfHandling": ["routing"],
+          "method": "GET",
+          "in": "single",
+          "out": "list",
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "calculateRoute",
+              "service": "routing",
+              "out": "list",
+              "in": "single"
+            }
+          ]
         }
       ]
     },
@@ -46,7 +80,7 @@
             "routing"
           ],
           "method": "GET",
-          "in": "list",
+          "in": "single",
           "out": "list",
           "workload": 2,
           "logic": [
@@ -76,6 +110,42 @@
     "database": "chargingstations",
     "interfaces": [
       {
+        "name": "reserveStation",
+        "type": "http",
+        "partOfHandling": [
+          "reservation"
+        ],
+        "method": "POST",
+        "in": "single",
+        "out": "none",
+        "logic": [
+          {
+            "type": "databaseAccess",
+            "method": "saveSingle"
+          },
+          {
+            "type": "httpServiceCall",
+            "endpoint": "blockCharging",
+            "service": "chargingmanagement",
+            "out": "none",
+            "in": "single"
+          }
+        ]
+      },
+      {
+        "name": "reportOccupancy",
+        "query": "reportOccupancy",
+        "partOfHandling": ["chargingProcess"],
+        "type": "amqp",
+        "in": "single",
+        "logic": [
+          {
+            "type": "databaseAccess",
+            "method": "saveSingle"
+          }
+        ]
+      },
+      {
         "name": "searchForStationsNearBy",
         "type": "http",
         "partOfHandling": [
@@ -89,6 +159,13 @@
           {
             "type": "databaseAccess",
             "method": "getList"
+          },
+          {
+            "type": "httpServiceCall",
+            "endpoint": "getExternalStations",
+            "service": "externalproviders",
+            "out": "list",
+            "in": "single"
           },
           {
             "type": "httpServiceCall",
@@ -120,6 +197,13 @@
             "method": "getList"
           },
           {
+            "type": "httpServiceCall",
+            "endpoint": "getExternalStations",
+            "service": "externalproviders",
+            "out": "list",
+            "in": "single"
+          },
+          {
             "type": "insertMock",
             "targetVariable": "list",
             "size": 4
@@ -128,7 +212,6 @@
       },
       {
         "name": "getStationDetails",
-        "type": "http",
         "type": "http",
         "partOfHandling": [
           "stationInformation"
@@ -141,6 +224,13 @@
           {
             "type": "databaseAccess",
             "method": "getList"
+          },
+          {
+            "type": "httpServiceCall",
+            "endpoint": "getExternalDetails",
+            "service": "externalproviders",
+            "out": "list",
+            "in": "single"
           },
           {
             "type": "insertMock",
@@ -194,12 +284,152 @@
           ]
         }
       ]
+    },
+    {
+      "name": "externalproviders",
+      "dbms": "maindbms",
+      "database": "externalproviders",
+      "interfaces": [
+        {
+          "name": "getExternalDetails",
+          "type": "http",
+          "partOfHandling": [
+            "stationInformation"
+          ],
+          "method": "GET",
+          "in": "single",
+          "out": "list",
+          "workload": 1,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 5
+            }
+          ]
+        },
+        {
+          "name": "getExternalStations",
+          "type": "http",
+          "partOfHandling": [
+            "stationInformation", "routing", "mapping"
+          ],
+          "method": "GET",
+          "in": "single",
+          "out": "list",
+          "workload": 1,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 50
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "chargingmanagement",
+      "dbms": "maindbms",
+      "database": "chargingmanagement",
+      "interfaces": [
+        {
+          "name": "requestChargingStart",
+          "query": "requestChargingStart",
+          "partOfHandling": ["chargingProcess"],
+          "type": "amqp",
+          "in": "single",
+          "workload": 1,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "reportOccupancy",
+              "service": "chargingstations",
+              "out": "single"
+            }
+          ]
+        },
+        {
+          "name": "stopCharging",
+          "query": "stopCharging",
+          "partOfHandling": ["chargingProcess"],
+          "type": "amqp",
+          "in": "single",
+          "workload": 1,
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "billChargedPower",
+              "service": "billing",
+              "out": "single",
+              "in": "none"
+            },
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+
+        {
+          "name": "blockCharging",
+          "type": "http",
+          "partOfHandling": [
+            "reservation"
+          ],
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "billing",
+      "dbms": "maindbms",
+      "database": "billing",
+      "interfaces": [
+        {
+          "name": "billChargedPower",
+          "type": "http",
+          "partOfHandling": [
+            "chargingProcess"
+          ],
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        }
+      ]
     }
   ],
   "databaseServers": [
     {
       "name": "maindbms",
-      "databases": ["map","routing","chargingstations","billing","accounting","billingfederation","stationmaintanance" ]
+      "databases": ["map","routing","chargingstations","billing","accounting","billingfederation","stationmaintanance",
+        "externalproviders","chargingmanagement", "billing" ]
     }
   ]
 }

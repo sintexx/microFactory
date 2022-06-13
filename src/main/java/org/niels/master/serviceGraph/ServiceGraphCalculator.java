@@ -12,20 +12,24 @@ import org.niels.master.model.logic.ServiceCall;
 import java.util.HashMap;
 
 public class ServiceGraphCalculator {
-    public static MutableGraph<Service> generateGraphModel(ServiceModel serviceModel) {
+    public static MutableGraph<Service> generateGraphModel(ServiceModel serviceModel, String handling) {
         MutableGraph<Service> g = GraphBuilder.directed().build();
-
-        var servicesByName = new HashMap<String, Service>();
-
 
         for (Service service : serviceModel.getConfig().getServices()) {
             g.addNode(service);
 
 
             for (Interface anInterface : service.getInterfaces()) {
+
+                if (handling != null && !anInterface.getPartOfHandling().contains(handling)) {
+                    continue;
+                }
+
                 for (Logic logic : anInterface.getLogic()) {
                     if (logic instanceof ServiceCall serviceCall) {
-                        g.putEdge(service, serviceModel.getServiceByName().get(serviceCall.getService()));
+                        if (serviceCall.getService() != null) {
+                            g.putEdge(service, serviceModel.getServiceByName().get(serviceCall.getService()));
+                        }
                     }
                 }
             }

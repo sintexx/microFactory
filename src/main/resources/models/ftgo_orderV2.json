@@ -397,10 +397,11 @@
               "method": "saveSingle"
             },
             {
-              "type": "amqpServiceCall",
-              "query": "prepareFood",
+              "type": "httpServiceCall",
+              "endpoint": "prepareFood",
               "service": "kitchen",
-              "out": "single"
+              "out": "none",
+              "in": "single"
             }
           ]
         },
@@ -444,10 +445,11 @@
       "interfaces": [
         {
           "name": "prepareFood",
-          "query": "prepareFood",
+          "method": "POST",
           "partOfHandling": ["orderFood"],
-          "type": "amqp",
+          "type": "http",
           "in": "single",
+          "out": "none",
           "logic": [
             {
               "type": "httpServiceCall",

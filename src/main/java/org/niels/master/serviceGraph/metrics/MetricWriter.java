@@ -13,10 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MetricWriter {
@@ -53,7 +50,7 @@ public class MetricWriter {
 
         var allHandlings = this.serviceModel.getAllHandlings();
 
-        var handlingMetricCalculator = new HandlingMetricCalculator(allServicesWithMetrics);
+        var handlingMetricCalculator = new HandlingMetricCalculator(allServicesWithMetrics, this.serviceModel);
 
         var allHandlingsWithMetricAverages = allHandlings.stream().map(s -> handlingMetricCalculator.getAveragesOfMetricsPerHandling(s)).collect(Collectors.toList());
 
@@ -86,6 +83,41 @@ public class MetricWriter {
             }
             currentRow++;
         }
+
+        var metricsForHandling = new HashMap<String, Map<HandlingMetric, Object>>();
+        for (String handling : this.serviceModel.getAllHandlings()) {
+            var metrics = handlingMetricCalculator.getHandlingSpecificMetrics(handling);
+
+            metricsForHandling.put(handling, metrics);
+        }
+
+        for (HandlingMetric m : Arrays.asList(HandlingMetric.values())) {
+            var r = sheet.createRow(currentRow);
+
+            r.createCell(0).setCellValue(m.toString());
+            var currentCell = 1;
+
+            for (String handling : this.serviceModel.getAllHandlings()) {
+                var metrics = metricsForHandling.get(handling);
+
+                if (metrics.containsKey(m)) {
+                    var value = metrics.get(m);
+
+                    if (value instanceof Integer i) {
+                        r.createCell(currentCell).setCellValue(i);
+                    } else if (value instanceof Double d) {
+                        r.createCell(currentCell).setCellValue(d);
+                    }
+                    else {
+                        r.createCell(currentCell).setCellValue(value.toString());
+                    }
+                }
+                currentCell++;
+            }
+
+            currentRow++;
+        }
+
         sheet.autoSizeColumn(0);
 
     }

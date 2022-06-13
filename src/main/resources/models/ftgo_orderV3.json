@@ -313,8 +313,10 @@
           "name": "notifyDelivery",
           "query": "notifyDelivery",
           "partOfHandling": ["orderFood"],
-          "type": "amqp",
+          "type": "http",
+          "method": "POST",
           "in": "single",
+          "out": "none",
           "logic": [
             {
               "type": "databaseAccess",
@@ -397,10 +399,11 @@
               "method": "saveSingle"
             },
             {
-              "type": "amqpServiceCall",
-              "query": "prepareFood",
+              "type": "httpServiceCall",
+              "endpoint": "prepareFood",
               "service": "kitchen",
-              "out": "single"
+              "out": "none",
+              "in": "single"
             }
           ]
         },
@@ -444,10 +447,11 @@
       "interfaces": [
         {
           "name": "prepareFood",
-          "query": "prepareFood",
+          "method": "POST",
           "partOfHandling": ["orderFood"],
-          "type": "amqp",
+          "type": "http",
           "in": "single",
+          "out": "none",
           "logic": [
             {
               "type": "httpServiceCall",
@@ -483,9 +487,10 @@
           "out": "none",
           "logic": [
             {
-              "type": "amqpServiceCall",
-              "query": "notifyDelivery",
+              "type": "httpServiceCall",
+              "endpoint": "notifyDelivery",
               "service": "notification",
+              "out": "none",
               "out": "single"
             },
             {

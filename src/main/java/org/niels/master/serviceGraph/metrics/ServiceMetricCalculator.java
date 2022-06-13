@@ -1,6 +1,7 @@
 package org.niels.master.serviceGraph.metrics;
 
 import com.google.common.graph.Graphs;
+import com.google.common.graph.MutableGraph;
 import org.niels.master.model.Service;
 import org.niels.master.model.logic.*;
 import org.niels.master.serviceGraph.ServiceModel;
@@ -42,21 +43,21 @@ public class ServiceMetricCalculator {
 
         metrics.put(Metric.ASYNC_SERVICE_DEPENDENCIES, asyncServiceDependencies);
 
-        var isPartOfCycle = checkIfPartOfCycle(service);
+        var isPartOfCycle = checkIfPartOfCycle(service, this.serviceModel.getServiceGraph());
         metrics.put(Metric.IS_PART_OF_CYCLE, isPartOfCycle);
 
-        if (isPartOfCycle) {
-            metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, 999999);
+        var maxAffectedServiceChain = this.serviceModel.getAllHandlings().stream().map(handling -> {
+            var graph = this.serviceModel.getGraphPerHandling().get(handling);
 
-        } else {
-            try {
-                // metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, calculateMayAffectedServiceChain(service));
-
-            }catch (Exception ex) {
-                logger.error("Overflow on " + service);
+            if (checkIfPartOfCycle(service, graph)) {
+                return -1;
             }
 
-        }
+            return calculateMayAffectedServiceChain(service, graph);
+        }).mapToInt(Integer::intValue).max();
+
+
+        metrics.put(Metric.MAX_AFFECTED_SERVICES_CHAIN_PER_HANDLING, maxAffectedServiceChain.getAsInt());
 
         long maxDependencies = getMaxAffectedDependencies(service);
 
@@ -102,13 +103,9 @@ public class ServiceMetricCalculator {
     private int countDependenciesByType(Service service, Class<?> type) {
         var res = service.getInterfaces().stream().map(i -> i.getLogic())
                 .map(l -> l.stream().filter(logicStep -> type.isInstance(logicStep)).count())
-                .mapToLong(Long::longValue).max();
+                .mapToLong(Long::longValue).sum();
 
-        if (res.isPresent()) {
-            return (int)res.getAsLong();
-        }
-
-        return 0;
+        return (int) res;
     }
 
     private List<Service> getAllDependentServices(String serviceName) {
@@ -117,7 +114,7 @@ public class ServiceMetricCalculator {
                     .filter(l -> {
                         for (Logic logic : l) {
                             if (logic instanceof ServiceCall serviceCall) {
-                                if (serviceCall.getService().equals(serviceName)) {
+                                if (serviceCall.getService() != null && serviceCall.getService().equals(serviceName)) {
                                     return true;
                                 }
                             }
@@ -137,34 +134,34 @@ public class ServiceMetricCalculator {
                 }).count();
     }
 
-    private int calculateMayAffectedServiceChain(Service service) {
+    public static int calculateMayAffectedServiceChain(Service service, MutableGraph<Service> graph) {
 
 
-        if (this.serviceModel.getServiceGraph().successors(service).size() == 0) {
+        if (graph.successors(service).size() == 0) {
             return 1;
         }
 
-        return 1 + this.serviceModel.getServiceGraph().successors(service).stream().map(a -> {
-            return calculateMayAffectedServiceChain(a);
+        return 1 + graph.successors(service).stream().map(a -> {
+            return calculateMayAffectedServiceChain(a,graph);
         }).mapToInt(Integer::intValue).max().getAsInt();
     }
 
-    private boolean checkIfPartOfCycle(Service service) {
-        var res = getAllReachable(service, new HashSet<>());
+    public static boolean checkIfPartOfCycle(Service service, MutableGraph<Service> graph) {
+        var res = getAllReachable(service, new HashSet<>(), graph);
 
         return res.contains(service);
     }
 
-    private Set<Service> getAllReachable(Service service, Set<Service> res) {
+    private static Set<Service> getAllReachable(Service service, Set<Service> res, MutableGraph<Service> graph) {
         // Graphs.reachableNodes(this.serviceModel.getServiceGraph(), service)
-        for (Service successor : this.serviceModel.getServiceGraph().successors(service)) {
+        for (Service successor : graph.successors(service)) {
 
             if (res.contains(successor))
                 continue;
 
             res.add(successor);
 
-            var next = getAllReachable(successor, res);
+            var next = getAllReachable(successor, res, graph);
 
             res.addAll(next);
         }

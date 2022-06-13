@@ -57,6 +57,8 @@ public class AmqpInterfaceGenerator {
         this.applicationProperties.addLine("mp.messaging.incoming." + endpoint.getQuery() + ".connector=smallrye-rabbitmq");
         this.applicationProperties.addLine("mp.messaging.incoming." + endpoint.getQuery() + ".address="+ endpoint.getQuery());
         this.applicationProperties.addLine("mp.messaging.incoming." + endpoint.getQuery() + ".queue.name="+ endpoint.getQuery());
+        // this.applicationProperties.addLine("mp.messaging.incoming." + endpoint.getQuery() + ".exchange.type=fanout");
+
 
 
         var logger = FieldSpec.builder(Logger.class, "LOGGER")

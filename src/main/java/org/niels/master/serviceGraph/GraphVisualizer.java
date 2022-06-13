@@ -97,7 +97,13 @@ public class GraphVisualizer {
 
                 var interfaceSymbol = anInterface.getType().equals(Interface.Type.HTTP) ? "⬡" : "⬖";
 
-                tableBuilder.append("<tr><td port=\"" + anInterface.getName() + "\" border=\"1\" bgcolor=\"" + interfaceColor + "\">" + interfaceSymbol + " " + anInterface.getName() + "</td></tr>" + System.lineSeparator());
+                String workload = "";
+                if (anInterface.getWorkload() != null) {
+                    workload = "⥁";
+                }
+
+
+                tableBuilder.append("<tr><td port=\"" + anInterface.getName() + "\" border=\"1\" bgcolor=\"" + interfaceColor + "\">" + interfaceSymbol + " " + anInterface.getName() + " " + workload + "</td></tr>" + System.lineSeparator());
 
                 if (anInterface instanceof AmqpInterface amqpInterface) {
 
@@ -150,7 +156,7 @@ public class GraphVisualizer {
 
                         var amqpNode = getOrCreateAmqpQueryNode(amqpNodes, serviceCall.getQuery(), g, null);
 
-                        currentServiceNode.addLink(between(port(anInterface.getName()), amqpNode));
+                            currentServiceNode.addLink(between(port(anInterface.getName()), amqpNode));
                     }
                 }
             }

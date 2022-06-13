@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Logic {
-    private String type;
+    private LogicType type;
 
     public enum LogicType {
         @SerializedName("databaseAccess")

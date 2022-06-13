@@ -72,7 +72,7 @@ public class InterfaceCodeGenerator {
 
         if (endpoint.getWorkload() != null) {
             endpointMethodBuilder.beginControlFlow("for (int i = 0; i <= " + endpoint.getWorkload() +"; i++)")
-                .beginControlFlow("for (int y = 100; y <= 100000; y++)")
+                .beginControlFlow("for (int y = 100; y <= 7000; y++)")
                         .addStatement("$T.primeFactors(y)", Primes.class)
                         .endControlFlow()
             .endControlFlow();

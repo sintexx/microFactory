@@ -2,6 +2,12 @@ package org.niels.master.generation;
 
 import com.squareup.javapoet.ClassName;
 import org.apache.commons.io.FileUtils;
+import org.apache.velocity.Template;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
+import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.runtime.RuntimeConstants;
+import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.niels.master.generation.clients.RestClientGenerator;
 import org.niels.master.generation.interfaces.AmqpInterfaceGenerator;
 import org.niels.master.generation.interfaces.HttpInterfaceGenerator;
@@ -15,8 +21,11 @@ import org.niels.master.serviceGraph.ServiceModel;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 public class ServiceRepresentation {
     private Service service;
@@ -59,9 +68,37 @@ public class ServiceRepresentation {
     }
 
     public void copyKubernetesYaml() throws IOException {
-        var kubernetesYml = servicePath.resolve("build/kubernetes/minikube.yml").toFile();
+        var kubernetesYml = servicePath.resolve("build/kubernetes/kubernetes.yml").toFile();
 
         FileUtils.copyFile(kubernetesYml, this.kubernetesOutput.resolve(this.service.getName() + ".yml").toFile());
+
+        createIngressYaml();
+    }
+
+    private void createIngressYaml() throws IOException {
+        VelocityEngine velocityEngine = new VelocityEngine();
+
+        velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADER, "classpath");
+        velocityEngine.setProperty("classpath.resource.loader.class", ClasspathResourceLoader.class.getName());
+
+        Velocity.init();
+
+        Template t = velocityEngine.getTemplate("/kubernetes/serviceIngress.vm");
+
+        VelocityContext context = new VelocityContext();
+
+        context.put("service", this.service.getName());
+        context.put("host", this.service.getName() + ".microfactory.dns.army");
+        context.put("serviceIngress", this.service.getName() + "ingress");
+
+
+
+        StringWriter writer = new StringWriter();
+        t.merge( context, writer );
+
+        File targetFile = kubernetesOutput.resolve(this.service.getName() + "IngressService.yml").toFile();
+
+        FileUtils.write(targetFile, writer.toString(), StandardCharsets.UTF_8);
     }
 
     private void createQuarkusFolder() throws IOException, URISyntaxException {
