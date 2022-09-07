@@ -2,17 +2,17 @@ package org.niels.master.serviceGraph.metrics;
 
 import com.google.common.graph.MutableGraph;
 import lombok.AllArgsConstructor;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.niels.master.model.Service;
 import org.niels.master.model.interfaces.Interface;
 import org.niels.master.model.logic.AmqpServiceCall;
 import org.niels.master.model.logic.HttpServiceCall;
 import org.niels.master.serviceGraph.ServiceModel;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @AllArgsConstructor
 public class HandlingMetricCalculator {
@@ -66,6 +66,22 @@ public class HandlingMetricCalculator {
 
         metrics.put(HandlingMetric.MAX_AFFECTED_SERVICES_CHAIN, max.getAsInt());
 
+
+        StandardDeviation sd = new StandardDeviation(false);
+
+        var t = this.serviceModel.getConfig().getServices().stream().map(s -> {
+            return s.getInterfaces().stream().filter(i -> i.getPartOfHandling().contains(handling)).map(i -> {
+                if (i.getWorkload() != null) {
+                    return (double)i.getWorkload();
+                }
+                return (double)0;
+            } ).collect(Collectors.toList());
+        }).flatMap(Collection::stream).mapToDouble(d ->d).toArray();
+
+        metrics.put(HandlingMetric.DISTRIBUTION_OF_WORKLOAD, sd.evaluate(t));
+
+
+        metrics.put(HandlingMetric.NUMBER_OF_AFFECTED_SERVICES, this.serviceModel.getGraphPerHandling().get(handling).nodes().size());
 
         return metrics;
     }

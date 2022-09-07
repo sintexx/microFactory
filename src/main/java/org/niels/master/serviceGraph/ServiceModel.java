@@ -45,11 +45,9 @@ public class ServiceModel {
         }
     }
 
-    public List<ServiceRepresentation> generateArtifacts() throws IOException, URISyntaxException {
+    public List<ServiceRepresentation> generateArtifacts(File outputFolder) throws IOException, URISyntaxException {
 
         var imageTag = CodeGenUtils.getTimestampTag();
-
-        var outputFolder = this.getClearedOutputFolder();
 
         Path kubernetesOutput = createCleanKubernetesFolder(outputFolder);
 
@@ -86,13 +84,5 @@ public class ServiceModel {
         return kubernetesOutput;
     }
 
-    private File getClearedOutputFolder() throws IOException {
-        var folder = new File("./GeneratedCode");
 
-        FileUtils.deleteDirectory(folder);
-
-        folder.mkdirs();
-
-        return folder;
-    }
 }

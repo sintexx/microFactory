@@ -5,7 +5,11 @@ public enum HandlingMetric {
 
     ASYNC_HANDLING_DEPENDENCIES("Number of Asynchronous Handling Dependencies"),
 
-    MAX_AFFECTED_SERVICES_CHAIN("Max Length of Affected Service Chain");
+    MAX_AFFECTED_SERVICES_CHAIN("Max Length of Affected Service Chain"),
+
+    DISTRIBUTION_OF_WORKLOAD("Distribution of workload (mean deviation)"),
+
+    NUMBER_OF_AFFECTED_SERVICES("Number of affected Services");
 
 
     private final String text;

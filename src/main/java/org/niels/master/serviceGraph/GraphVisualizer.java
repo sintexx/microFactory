@@ -36,27 +36,28 @@ public class GraphVisualizer {
     }
 
 
-    public void writeAllHandlingGraphs(File output) throws IOException {
+    public void writeAllHandlingGraphs(File output, String name) throws IOException {
         Graphviz.useEngine(new GraphvizCmdLineEngine());
 
         for (String allHandling : serviceModel.getAllHandlings()) {
-            writeHandlingGraphAsSvg(serviceModel, allHandling,
-                    output.toPath().resolve(allHandling + ".svg").toFile());
+            writeHandlingGraphAsPng(serviceModel, allHandling,
+                    output.toPath().resolve(allHandling + ".dot").toFile());
         }
 
         MutableGraph g = createGraph(serviceModel, null);
 
 
-        writeHandlingGraphAsSvg(serviceModel, null, output.toPath().resolve("complete.svg").toFile());
+        writeHandlingGraphAsPng(serviceModel, null, output.toPath().resolve(name + ".dot").toFile());
     }
 
 
 
-    public void writeHandlingGraphAsSvg(ServiceModel serviceModel, String handling, File out) throws IOException {
+    public void writeHandlingGraphAsPng(ServiceModel serviceModel, String handling, File out) throws IOException {
         MutableGraph g = createGraph(serviceModel, handling);
-
-        Graphviz.fromGraph(g)
-                .render(Format.SVG).toFile(out);
+        g.graphAttrs().add("ratio", "compress");
+        //g.graphAttrs().add("size", "6,3");
+        Graphviz.fromGraph(g).width(1500).height(500)
+                .render(Format.DOT).toFile(out);
     }
 
     @NotNull
@@ -85,7 +86,7 @@ public class GraphVisualizer {
 
             var serviceColor = "white";
 
-            tableBuilder.append("<tr><td port=\"serviceName\" border=\"1\" bgcolor=\"" + serviceColor + "\"><b>" + service.getName() + "</b></td></tr>" + System.lineSeparator());
+            tableBuilder.append("<tr><td port=\"serviceName\" border=\"1\" bgcolor=\"" + serviceColor + "\"><b> <FONT POINT-SIZE=\"22\">" + service.getName() + "</FONT></b></td></tr>" + System.lineSeparator());
 
             for (Interface anInterface : service.getInterfaces()) {
 
@@ -103,7 +104,7 @@ public class GraphVisualizer {
                 }
 
 
-                tableBuilder.append("<tr><td port=\"" + anInterface.getName() + "\" border=\"1\" bgcolor=\"" + interfaceColor + "\">" + interfaceSymbol + " " + anInterface.getName() + " " + workload + "</td></tr>" + System.lineSeparator());
+                tableBuilder.append("<tr><td port=\"" + anInterface.getName() + "\" border=\"1\" bgcolor=\"" + interfaceColor + "\">" + interfaceSymbol + "  <FONT POINT-SIZE=\"18\">" + anInterface.getName() + "</FONT> " + workload + "</td></tr>" + System.lineSeparator());
 
                 if (anInterface instanceof AmqpInterface amqpInterface) {
 

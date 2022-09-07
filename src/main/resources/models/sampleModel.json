@@ -12,7 +12,6 @@
           "method": "POST",
           "in": "single",
           "out": "none",
-          "time": 23,
           "logic": [
             {
               "type": "amqpServiceCall",
@@ -29,20 +28,6 @@
       "dbms": "dbms1",
       "database": "db1",
       "interfaces": [
-        {
-          "name": "getLogs",
-          "type": "http",
-          "partOfHandling": ["retrieveLog"],
-          "method": "GET",
-          "in": "none",
-          "out": "list",
-          "logic": [
-            {
-              "type": "databaseAccess",
-              "method": "getList"
-            }
-          ]
-        },
         {
           "name": "logChange",
           "query": "logChanged",

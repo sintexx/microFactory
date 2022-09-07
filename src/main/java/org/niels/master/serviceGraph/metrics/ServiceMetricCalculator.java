@@ -83,7 +83,7 @@ public class ServiceMetricCalculator {
         metrics.put(Metric.RELATIVE_DEPENDENCE_OF_THE_SERVICE, ABSOLUT_DEPENDENCE_OF_THE_SERVICE / (double)this.serviceModel.getConfig().getServices().size());
         metrics.put(Metric.RELATIVE_CRITICALITY_OF_SERVICE, ABSOLUT_CRITICALITY_OF_SERVICE / (double)this.serviceModel.getConfig().getServices().size());
 
-
+        metrics.put(Metric.WORKLOAD, service.getInterfaces().stream().filter(i -> i.getWorkload() != null && i.getPartOfHandling().contains("menu")).map(i -> i.getWorkload()).mapToInt(Integer::intValue).sum());
         return metrics;
     }
 

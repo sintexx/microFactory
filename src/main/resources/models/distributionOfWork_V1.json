@@ -1,0 +1,530 @@
+{
+  "services":[
+    {
+      "name": "storehouse",
+      "dbms": "maindbms",
+      "database": "storehouse",
+      "interfaces": [
+        {
+          "name": "quantityOfIngredient",
+          "partOfHandling": [
+            "menu"
+          ],
+          "type": "http",
+          "method": "GET",
+          "in": "list",
+          "out": "list",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 4
+            }
+          ]
+        },
+        {
+          "name": "consumeIngredients",
+          "partOfHandling": [
+            "orderFood"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "list",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveList"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "dispatch",
+      "dbms": "maindbms",
+      "database": "dispatch",
+      "interfaces": [
+        {
+          "name": "driverStartShift",
+          "partOfHandling": [
+            "driverManagement"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
+          "name": "driverEndShift",
+          "partOfHandling": [
+            "driverManagement"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
+          "name": "reportLocation",
+          "query": "reportLocation",
+          "partOfHandling": ["driverManagement"],
+          "type": "amqp",
+          "in": "single",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        },
+        {
+          "name": "findNearestFreeDrivers",
+          "partOfHandling": [
+            "menu"
+          ],
+          "type": "http",
+          "method": "GET",
+          "in": "single",
+          "out": "list",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 4
+            }
+          ]},
+        {
+          "name": "assignToNearestDriver",
+          "partOfHandling": [
+            "orderFood"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "workload": 2,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "single"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "assignOrder",
+              "out": "single"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "paymentprovider",
+      "dbms": "maindbms",
+      "database": "payment",
+      "interfaces": [
+        {
+          "name": "chargeUser",
+          "partOfHandling": [
+            "billing"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        }]
+    },
+    {
+      "name": "pricecalculator",
+      "dbms": "maindbms",
+      "database": "pricecalculator",
+      "interfaces": [
+        {
+          "name": "calculateUserPrice",
+          "partOfHandling": ["menu"],
+          "type": "http",
+          "method": "GET",
+          "in": "list",
+          "out": "list",
+          "workload": 2,
+          "logic": [
+            {
+              "type": "insertMock",
+              "targetVariable": "single"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "checkCoupons",
+              "service": "accounting",
+              "out": "list",
+              "in": "single"
+            },
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "restaurantMenu",
+              "service": "restaurant",
+              "out": "list",
+              "in": "none"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "itemviewer",
+      "dbms": "maindbms",
+      "database": "menu",
+      "interfaces": [{
+        "name": "getMenu",
+        "partOfHandling": ["menu"],
+        "type": "http",
+        "method": "GET",
+        "in": "none",
+        "out": "list",
+        "workload": 1,
+        "logic": [
+          {
+            "type": "insertMock",
+            "targetVariable": "single"
+          },
+          {
+            "type": "httpServiceCall",
+            "endpoint": "deliveryEstimate",
+            "service": "delivery",
+            "out": "single",
+            "in": "single"
+          },
+          {
+            "type": "httpServiceCall",
+            "endpoint": "calculateUserPrice",
+            "service": "pricecalculator",
+            "out": "list",
+            "in": "list"
+          }
+        ]
+      }
+      ]
+    },
+    {
+      "name": "accounting",
+      "dbms": "maindbms",
+      "database": "accounting",
+      "interfaces": [
+        {
+          "name": "checkIfValidPayment",
+          "partOfHandling": ["orderFood"],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "single",
+          "workload": 2,
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            },
+            {
+              "type": "databaseAccess",
+              "method": "getSingle"
+            }
+          ]
+        }, {
+          "name": "checkCoupons",
+          "partOfHandling": ["menu"],
+          "type": "http",
+          "method": "GET",
+          "in": "single",
+          "out": "list",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            }
+          ]
+        },
+        {
+          "name": "billOrder",
+          "partOfHandling": ["billing"],
+          "query": "billForOrder",
+          "type": "amqp",
+          "int": "single",
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "chargeUser",
+              "service": "paymentprovider",
+              "out": "none",
+              "in": "single"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "notifyOfPayment",
+              "service": "notification",
+              "out": "single"
+            },
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "notification",
+      "dbms": "maindbms",
+      "database": "notification",
+      "interfaces": [
+        {
+          "name": "notifyDelivery",
+          "query": "notifyDelivery",
+          "partOfHandling": ["orderFood"],
+          "type": "amqp",
+          "in": "single",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "notifyClientOfDelivery",
+              "out": "single"
+            }
+          ]
+        },
+        {
+          "name": "notifyOfPayment",
+          "query": "notifyOfPayment",
+          "partOfHandling": ["billing"],
+          "type": "amqp",
+          "in": "single",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "notifyClientOfPayment",
+              "out": "single"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "order",
+      "dbms": "maindbms",
+      "database": "ordersdb",
+      "interfaces": [
+        {
+          "name": "placeOrder",
+          "partOfHandling": ["orderFood"],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "workload": 2,
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "checkIfValidPayment",
+              "service": "accounting",
+              "out": "single",
+              "in": "single"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "placeOrder",
+              "service": "restaurant",
+              "out": "none",
+              "in": "single"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "restaurant",
+      "dbms": "maindbms",
+      "database": "restaurant",
+      "interfaces": [
+        {
+          "name": "placeOrder",
+          "partOfHandling": ["orderFood"],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "saveSingle"
+            },
+            {
+              "type": "amqpServiceCall",
+              "query": "prepareFood",
+              "service": "kitchen",
+              "out": "single"
+            }
+          ]
+        },
+        {
+          "name": "restaurantMenu",
+          "partOfHandling": ["menu"],
+          "type": "http",
+          "method": "GET",
+          "in": "none",
+          "out": "list",
+          "logic": [
+            {
+              "type": "databaseAccess",
+              "method": "getList"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 15
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "quantityOfIngredient",
+              "service": "storehouse",
+              "out": "list",
+              "in": "list"
+            },
+            {
+              "type": "insertMock",
+              "targetVariable": "list",
+              "size": 15
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "kitchen",
+      "dbms": "maindbms",
+      "database": "kitchen",
+      "interfaces": [
+        {
+          "name": "prepareFood",
+          "query": "prepareFood",
+          "partOfHandling": ["orderFood"],
+          "type": "amqp",
+          "in": "single",
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "consumeIngredients",
+              "service": "storehouse",
+              "out": "none",
+              "in": "list"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "startDelivery",
+              "service": "delivery",
+              "out": "none",
+              "in": "single"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "delivery",
+      "dbms": "maindbms",
+      "database": "delivery",
+      "interfaces": [
+        {
+          "name": "startDelivery",
+          "partOfHandling": [
+            "orderFood"
+          ],
+          "type": "http",
+          "method": "POST",
+          "in": "single",
+          "out": "none",
+          "logic": [
+            {
+              "type": "amqpServiceCall",
+              "query": "notifyDelivery",
+              "service": "notification",
+              "out": "single"
+            },
+            {
+              "type": "httpServiceCall",
+              "endpoint": "assignToNearestDriver",
+              "service": "dispatch",
+              "out": "none",
+              "in": "single"
+            }
+          ]
+        },
+        {
+          "name": "deliveryEstimate",
+          "partOfHandling": [
+            "menu"
+          ],
+          "workload": 2,
+          "type": "http",
+          "method": "GET",
+          "in": "single",
+          "out": "single",
+          "logic": [
+            {
+              "type": "httpServiceCall",
+              "endpoint": "findNearestFreeDrivers",
+              "service": "dispatch",
+              "out": "list",
+              "in": "single"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "databaseServers": [
+    {
+      "name": "maindbms",
+      "databases": ["accounting", "notification", "ordersdb", "restaurant", "kitchen", "delivery",
+        "menu", "pricecalculator", "payment", "dispatch", "storehouse"]
+    }
+  ]
+}

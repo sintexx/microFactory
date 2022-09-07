@@ -26,7 +26,9 @@ public enum Metric {
 
     RELATIVE_DEPENDENCE_OF_THE_SERVICE("Relative Dependence of the Service (RDS)"),
 
-    RELATIVE_CRITICALITY_OF_SERVICE("RELATIVE Criticality of the Service (RCS)");
+    RELATIVE_CRITICALITY_OF_SERVICE("RELATIVE Criticality of the Service (RCS)"),
+
+    WORKLOAD("Workload");
 
 
     private final String text;

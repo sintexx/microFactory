@@ -24,10 +24,10 @@ public class DatabaseAccess {
             }
             case SAVE_SINGLE -> {
                 endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.singleDataVariable + ".id = null"));
-                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.singleDataVariable + ".persist()"));
+                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.singleDataVariable + ".persistAndFlush()"));
             }
             case SAVE_LIST -> {
-                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.listDataVariable + ".stream().forEach(d -> {d.id = null;d.persist();})"));
+                endpointMethodBuilder.addStatement(CodeBlock.of(CodeConstants.listDataVariable + ".stream().forEach(d -> {d.id = null;d.persistAndFlush();})"));
             }
         }
     }
